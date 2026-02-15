@@ -242,15 +242,17 @@
 - `backend/src/db/dynamic-tables.ts`:
   - Columna `fecha_importacion TIMESTAMPTZ NOT NULL DEFAULT NOW()` agregada a tablas `_facturacion` y `_recaudos`
   - Nueva función `ensureFechaImportacion`: migra tablas existentes agregando la columna si no existe
-  - Nueva función `getImportDates`: retorna fechas únicas de importación con conteo de registros
-  - `getTableData` ahora acepta parámetro opcional `fechaImportacion` para filtrar por fecha
+  - Nueva función `getImportDates`: retorna **timestamp completo** (fecha + hora) de cada importación con conteo de registros
+  - `getTableData` ahora acepta parámetro opcional `fechaImportacion` (timestamp completo) para filtrar por importación exacta
+  - **Múltiples importaciones en el mismo día son independientes**: cada subida tiene su propio timestamp único
 - `backend/src/routes/upload.ts`:
-  - Ambos endpoints (`/upload` y `/upload-data`) asignan `fecha_importacion` con timestamp del momento de importación
+  - Ambos endpoints (`/upload` y `/upload-data`) asignan `fecha_importacion` con timestamp ISO del momento exacto de importación
   - Llaman `ensureFechaImportacion` antes de insertar para migrar tablas existentes
-  - Nuevo endpoint `GET /api/import-dates/:slug/:tableType` retorna fechas de importación disponibles
-  - Endpoint `GET /api/data/:slug/:tableType` acepta query param `?fecha=YYYY-MM-DD` para filtrar
+  - Nuevo endpoint `GET /api/import-dates/:slug/:tableType` retorna timestamps únicos de importación
+  - Endpoint `GET /api/data/:slug/:tableType` acepta query param `?fecha=TIMESTAMP` para filtrar por importación específica
 - `frontend/src/components/DataViewer.tsx`:
-  - Nuevo selector con ícono Calendar para filtrar por fecha de importación
-  - Opciones: "Todas las importaciones" + cada fecha con conteo de registros
-  - Indicador visual en el conteo cuando hay filtro activo
+  - Nuevo selector con ícono Calendar para filtrar por importación específica
+  - Opciones: "Todas las importaciones" + cada timestamp con formato legible (DD/MM/YYYY HH:MM:SS) y conteo de registros
+  - Permite ver hasta 3 o más importaciones del mismo día de forma **independiente**
+  - Indicador visual en el conteo cuando hay filtro activo mostrando fecha y hora
   - Se resetea filtro al cambiar municipio o tipo de tabla

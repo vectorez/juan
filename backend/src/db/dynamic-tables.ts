@@ -111,7 +111,7 @@ export async function getTableData(
   const params: unknown[] = [];
 
   if (fechaImportacion) {
-    whereClause = `WHERE fecha_importacion::date = $1`;
+    whereClause = `WHERE fecha_importacion = $1::timestamptz`;
     params.push(fechaImportacion);
   }
 
@@ -135,11 +135,11 @@ export async function getImportDates(
   try {
     const result = await client.unsafe(`
       SELECT
-        fecha_importacion::date::text AS fecha,
+        fecha_importacion::text AS fecha,
         count(*)::int AS registros
       FROM "${tableName}"
-      GROUP BY fecha_importacion::date
-      ORDER BY fecha_importacion::date DESC
+      GROUP BY fecha_importacion
+      ORDER BY fecha_importacion DESC
     `);
     return result as unknown as { fecha: string; registros: number }[];
   } catch {

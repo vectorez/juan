@@ -129,17 +129,38 @@ export function DataViewer({ initialSlug }: DataViewerProps = {}) {
               className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm font-medium"
             >
               <option value="">Todas las importaciones</option>
-              {importDates.map((d) => (
-                <option key={d.fecha} value={d.fecha}>
-                  {d.fecha} ({d.registros.toLocaleString()} reg.)
-                </option>
-              ))}
+              {importDates.map((d) => {
+                const fecha = new Date(d.fecha);
+                const formatoLocal = fecha.toLocaleString('es-CO', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit'
+                });
+                return (
+                  <option key={d.fecha} value={d.fecha}>
+                    {formatoLocal} ({d.registros.toLocaleString()} reg.)
+                  </option>
+                );
+              })}
             </select>
           </div>
         </div>
         <p className="text-sm text-gray-500">
           <span className="font-mono">{selectedSlug}_{tableType}</span> — {total.toLocaleString()} registros
-          {selectedFecha && <span className="ml-1 text-indigo-600">(filtrado: {selectedFecha})</span>}
+          {selectedFecha && (
+            <span className="ml-1 text-indigo-600">
+              (filtrado: {new Date(selectedFecha).toLocaleString('es-CO', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+              })})
+            </span>
+          )}
         </p>
       </div>
 
