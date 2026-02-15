@@ -52,6 +52,8 @@ export function MunicipiosManager() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [detectingFacturacion, setDetectingFacturacion] = useState(false);
+  const [detectingRecaudos, setDetectingRecaudos] = useState(false);
   const fileFacturacionRef = useRef<HTMLInputElement>(null);
   const fileRecaudosRef = useRef<HTMLInputElement>(null);
 
@@ -86,6 +88,11 @@ export function MunicipiosManager() {
   };
 
   const detectColumnasFromFile = (file: File, tipo: "facturacion" | "recaudos") => {
+    if (tipo === "facturacion") {
+      setDetectingFacturacion(true);
+    } else {
+      setDetectingRecaudos(true);
+    }
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
@@ -106,6 +113,12 @@ export function MunicipiosManager() {
         }
       } catch {
         setError("Error al leer el archivo");
+      } finally {
+        if (tipo === "facturacion") {
+          setDetectingFacturacion(false);
+        } else {
+          setDetectingRecaudos(false);
+        }
       }
     };
     reader.readAsArrayBuffer(file);
@@ -285,11 +298,16 @@ export function MunicipiosManager() {
               <button
                 type="button"
                 onClick={() => fileFacturacionRef.current?.click()}
-                className="flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors"
+                disabled={detectingFacturacion}
+                className="flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors disabled:opacity-50"
                 title="Detectar desde archivo"
               >
-                <FileSpreadsheet className="w-4 h-4" />
-                Auto
+                {detectingFacturacion ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <FileSpreadsheet className="w-4 h-4" />
+                )}
+                {detectingFacturacion ? "Leyendo..." : "Auto"}
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-1">Sube un archivo para detectar automáticamente</p>
@@ -320,11 +338,16 @@ export function MunicipiosManager() {
               <button
                 type="button"
                 onClick={() => fileRecaudosRef.current?.click()}
-                className="flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors"
+                disabled={detectingRecaudos}
+                className="flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors disabled:opacity-50"
                 title="Detectar desde archivo"
               >
-                <FileSpreadsheet className="w-4 h-4" />
-                Auto
+                {detectingRecaudos ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <FileSpreadsheet className="w-4 h-4" />
+                )}
+                {detectingRecaudos ? "Leyendo..." : "Auto"}
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-1">Sube un archivo para detectar automáticamente</p>
