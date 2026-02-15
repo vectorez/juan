@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
+import { DataViewer } from "./DataViewer";
 import {
   Database,
   Loader2,
@@ -16,6 +17,7 @@ import {
   Pencil,
   ChevronLeft,
   ChevronRight,
+  Download,
 } from "lucide-react";
 
 interface MunicipioTable {
@@ -23,6 +25,8 @@ interface MunicipioTable {
   slug: string;
   facturacion: number;
   recaudos: number;
+  encabezadosFacturacion: string[];
+  encabezadosRecaudos: string[];
 }
 
 interface TablesResponse {
@@ -67,10 +71,19 @@ export function TableStats() {
   const [previewPage, setPreviewPage] = useState(0);
   const [editCell, setEditCell] = useState<{ r: number; c: number } | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [viewModal, setViewModal] = useState<{ slug: string; municipio: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
 
   const PREVIEW_PAGE_SIZE = 50;
+
+  const downloadTemplate = (headers: string[], municipio: string, tipo: string) => {
+    if (!headers || headers.length === 0) return;
+    const ws = XLSX.utils.aoa_to_sheet([headers]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, tipo);
+    XLSX.writeFile(wb, `plantilla_${municipio}_${tipo}.xlsx`);
+  };
 
   const fetchTables = useCallback(() => {
     axios
@@ -240,30 +253,51 @@ export function TableStats() {
                 </div>
                 <p className="font-semibold text-gray-900">{t.municipio}</p>
               </div>
-              <button
-                onClick={() => openUploadModal(t.slug, t.municipio)}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
-                title="Subir archivo"
-              >
-                <Upload className="w-3.5 h-3.5" />
-                Subir
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setViewModal({ slug: t.slug, municipio: t.municipio })}
+                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  title="Ver datos"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  Ver
+                </button>
+                <button
+                  onClick={() => openUploadModal(t.slug, t.municipio)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+                  title="Subir archivo"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  Subir
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-gray-50 rounded-lg p-2">
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-gray-500">Facturación</p>
-                  {t.facturacion > 0 && (
-                    <button
-                      onClick={() =>
-                        setConfirm({ slug: t.slug, tableType: "facturacion", municipio: t.municipio })
-                      }
-                      className="text-gray-400 hover:text-red-500 transition-colors"
-                      title="Vaciar tabla de facturación"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {t.encabezadosFacturacion?.length > 0 && (
+                      <button
+                        onClick={() => downloadTemplate(t.encabezadosFacturacion, t.slug, "facturacion")}
+                        className="text-gray-400 hover:text-indigo-500 transition-colors"
+                        title="Descargar plantilla facturación"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    {t.facturacion > 0 && (
+                      <button
+                        onClick={() =>
+                          setConfirm({ slug: t.slug, tableType: "facturacion", municipio: t.municipio })
+                        }
+                        className="text-gray-400 hover:text-red-500 transition-colors"
+                        title="Vaciar tabla de facturación"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <p className="text-lg font-bold text-gray-900">
                   {t.facturacion.toLocaleString()}
@@ -272,17 +306,28 @@ export function TableStats() {
               <div className="bg-gray-50 rounded-lg p-2">
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-gray-500">Recaudos</p>
-                  {t.recaudos > 0 && (
-                    <button
-                      onClick={() =>
-                        setConfirm({ slug: t.slug, tableType: "recaudos", municipio: t.municipio })
-                      }
-                      className="text-gray-400 hover:text-red-500 transition-colors"
-                      title="Vaciar tabla de recaudos"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {t.encabezadosRecaudos?.length > 0 && (
+                      <button
+                        onClick={() => downloadTemplate(t.encabezadosRecaudos, t.slug, "recaudos")}
+                        className="text-gray-400 hover:text-indigo-500 transition-colors"
+                        title="Descargar plantilla recaudos"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    {t.recaudos > 0 && (
+                      <button
+                        onClick={() =>
+                          setConfirm({ slug: t.slug, tableType: "recaudos", municipio: t.municipio })
+                        }
+                        className="text-gray-400 hover:text-red-500 transition-colors"
+                        title="Vaciar tabla de recaudos"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <p className="text-lg font-bold text-gray-900">
                   {t.recaudos.toLocaleString()}
@@ -564,6 +609,33 @@ export function TableStats() {
                 {uploadError}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* View Data Modal */}
+      {viewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-xl shadow-xl border border-gray-200 w-full max-w-7xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="bg-indigo-100 rounded-full p-2">
+                  <Eye className="w-5 h-5 text-indigo-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Datos de {viewModal.municipio}
+                </h3>
+              </div>
+              <button
+                onClick={() => setViewModal(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-6">
+              <DataViewer initialSlug={viewModal.slug} />
+            </div>
           </div>
         </div>
       )}

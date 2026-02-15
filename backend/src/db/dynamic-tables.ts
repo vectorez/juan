@@ -25,6 +25,26 @@ export async function createMunicipioTables(slug: string, columnasFacturacion: n
   `);
 }
 
+export async function ensureTableColumns(slug: string, tableType: "facturacion" | "recaudos", numCols: number) {
+  const s = sanitizeSlug(slug);
+  const tableName = `${s}_${tableType}`;
+
+  const result = await client.unsafe(`
+    SELECT column_name FROM information_schema.columns
+    WHERE table_name = '${tableName}' AND column_name LIKE 'col_%'
+    ORDER BY ordinal_position
+  `);
+  const currentCols = result.length;
+
+  if (numCols > currentCols) {
+    const alterCols = Array.from(
+      { length: numCols - currentCols },
+      (_, i) => `ADD COLUMN col_${currentCols + i + 1} TEXT`
+    ).join(", ");
+    await client.unsafe(`ALTER TABLE "${tableName}" ${alterCols}`);
+  }
+}
+
 export async function dropMunicipioTables(slug: string) {
   const s = sanitizeSlug(slug);
   await client.unsafe(`DROP TABLE IF EXISTS "${s}_facturacion" CASCADE`);

@@ -1,16 +1,14 @@
 import { useState } from "react";
-import { DataViewer } from "./components/DataViewer";
 import { TableStats } from "./components/TableStats";
 import { MunicipiosManager } from "./components/MunicipiosManager";
-import { Database, Table, MapPin } from "lucide-react";
+import { Database, MapPin } from "lucide-react";
 
-type Tab = "data" | "municipios";
+type Tab = "municipios";
 
 function App() {
-  const [activeTab, setActiveTab] = useState<Tab>("data");
+  const [activeTab, setActiveTab] = useState<Tab>("municipios");
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
-    { key: "data", label: "Ver Datos", icon: <Table className="w-4 h-4" /> },
     { key: "municipios", label: "Municipios", icon: <MapPin className="w-4 h-4" /> },
   ];
 
@@ -46,7 +44,6 @@ function App() {
       <main className="max-w-7xl mx-auto px-4 py-8">
         <TableStats />
 
-        {activeTab === "data" && <DataViewer />}
         {activeTab === "municipios" && <MunicipiosManager />}
       </main>
     </div>

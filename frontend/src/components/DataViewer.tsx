@@ -19,7 +19,11 @@ interface DataResponse {
   total: number;
 }
 
-export function DataViewer() {
+interface DataViewerProps {
+  initialSlug?: string;
+}
+
+export function DataViewer({ initialSlug }: DataViewerProps = {}) {
   const [municipiosList, setMunicipiosList] = useState<Municipio[]>([]);
   const [selectedSlug, setSelectedSlug] = useState("");
   const [tableType, setTableType] = useState<"facturacion" | "recaudos">("facturacion");
@@ -31,16 +35,19 @@ export function DataViewer() {
   const pageSize = 25;
 
   useEffect(() => {
+    if (initialSlug) {
+      setSelectedSlug(initialSlug);
+    }
     axios
       .get<{ data: Municipio[] }>("/api/municipios")
       .then((res) => {
         setMunicipiosList(res.data.data);
-        if (res.data.data.length > 0 && !selectedSlug) {
+        if (res.data.data.length > 0 && !selectedSlug && !initialSlug) {
           setSelectedSlug(res.data.data[0].slug);
         }
       })
       .catch(() => {});
-  }, []);
+  }, [initialSlug]);
 
   useEffect(() => {
     if (!selectedSlug) return;
@@ -66,20 +73,22 @@ export function DataViewer() {
       {/* Header */}
       <div className="p-4 border-b border-gray-200 flex flex-wrap items-center gap-3 justify-between">
         <div className="flex items-center gap-3">
-          <select
-            value={selectedSlug}
-            onChange={(e) => {
-              setSelectedSlug(e.target.value);
-              setPage(0);
-            }}
-            className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm font-medium"
-          >
-            {municipiosList.map((m) => (
-              <option key={m.slug} value={m.slug}>
-                {m.nombreMunicipio}
-              </option>
-            ))}
-          </select>
+          {!initialSlug && (
+            <select
+              value={selectedSlug}
+              onChange={(e) => {
+                setSelectedSlug(e.target.value);
+                setPage(0);
+              }}
+              className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm font-medium"
+            >
+              {municipiosList.map((m) => (
+                <option key={m.slug} value={m.slug}>
+                  {m.nombreMunicipio}
+                </option>
+              ))}
+            </select>
+          )}
           <select
             value={tableType}
             onChange={(e) => {

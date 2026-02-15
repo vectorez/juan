@@ -33,81 +33,12 @@ function parseCsvLine(line: string): string[] {
   return result;
 }
 
-function parseNumber(val: string): number | null {
-  if (!val || val === "") return null;
-  const n = Number(val);
-  return isNaN(n) ? null : n;
-}
-
-function parseDecimal(val: string): string | null {
-  if (!val || val === "") return null;
-  return val.replace(",", ".");
-}
-
-function mapFacturacionRow(values: string[], headers: string[]) {
-  const get = (name: string) => {
-    const idx = headers.indexOf(name);
-    return idx >= 0 ? values[idx] : "";
-  };
-  return {
-    ciclo: parseNumber(get("Ciclo")),
-    servicio_suscrito_dependiente: parseNumber(get("ServicioSuscritoDependiente")),
-    servicio_suscrito_padre: parseNumber(get("ServicioSuscritoPadre")),
-    tipo_servicio: parseNumber(get("TipoServicio")),
-    descripcion_servicio: get("DescripcionServicio") || null,
-    suscripcion: parseNumber(get("Suscripcion")),
-    fecha_generacion_factura: get("FechaGeneracionFactura") || null,
-    ano_mes_factura: parseNumber(get("AnoMesFactura")),
-    nro_factura: parseNumber(get("NroFactura")),
-    categoria: parseNumber(get("Categoria")),
-    sub_categoria: parseNumber(get("SubCategoria")),
-    valor_impuesto: parseDecimal(get("ValorImpuesto")),
-    valor_cartera: parseDecimal(get("ValorCartera")),
-    intereses_mora: parseDecimal(get("InteresesMora")),
-    valor_reconocimiento: parseDecimal(get("ValorReconocimiento")),
-    valor_separacion: parseDecimal(get("ValorSeparacion")),
-    valor_financiacion: parseDecimal(get("ValorFinanciacion")),
-    valor_total_facturado: parseDecimal(get("ValorTotalFacturado")),
-    direccion: get("Direccion") || null,
-    nro_instalacion: get("NroInstalacion") || null,
-    sujeto_pasivo_pdto_dependiente: get("SujetoPasivoPdtoDependiente") || null,
-    identificacion_sujeto_pasivo: get("IdentificacionSujetoPasivo") || null,
-    cod_departamento: parseNumber(get("CodDepartamento")),
-    cod_municipio: parseNumber(get("CodMunicipio")),
-    consumo_energia: parseDecimal(get("ConsumoEnergia")),
-  };
-}
-
-function mapRecaudosRow(values: string[], headers: string[]) {
-  const get = (name: string) => {
-    const idx = headers.indexOf(name);
-    return idx >= 0 ? values[idx] : "";
-  };
-  return {
-    servicio_suscrito_dependiente: parseNumber(get("ServicioSuscritoDependiente")),
-    servicio_suscrito_padre: parseNumber(get("ServicioSuscritoPadre")),
-    tipo_servicio: parseNumber(get("TipoServicio")),
-    descripcion_servicio: get("DescripcionServicio") || null,
-    suscripcion: parseNumber(get("Suscripcion")),
-    ano_mes_factura: parseNumber(get("AnoMesFactura")),
-    nro_factura: parseNumber(get("NroFactura")),
-    categoria: parseNumber(get("Categoria")),
-    sub_categoria: parseNumber(get("SubCategoria")),
-    valor_recaudo_impuesto: parseDecimal(get("ValorRecaudoImpuesto")),
-    valor_recaudo_intereses: parseDecimal(get("ValorRecaudoIntereses")),
-    valor_recaudo_separacion: parseDecimal(get("ValorRecaudoSeparacion")),
-    valor_reconocimiento: parseDecimal(get("ValorReconocimiento")),
-    valor_otros_recaudos: parseDecimal(get("ValorOtrosRecaudos")),
-    valor_total_recaudos: parseDecimal(get("ValorTotalRecaudos")),
-    fecha_pago: get("FechaPago") || null,
-    direccion: get("Direccion") || null,
-    nro_instalacion: get("NroInstalacion") || null,
-    sujeto_pasivo_pdto_dependiente: get("SujetoPasivoPdtoDependiente") || null,
-    identificacion_sujeto_pasivo: get("IdentificacionSujetoPasivo") || null,
-    cod_departamento: parseNumber(get("CodDepartamento")),
-    cod_municipio: parseNumber(get("CodMunicipio")),
-    valor_reconocimiento_covid: parseDecimal(get("ValorReconocimientoCOVID")),
-  };
+function mapGenericRow(values: string[]): Record<string, unknown> {
+  const row: Record<string, unknown> = {};
+  for (let i = 0; i < values.length; i++) {
+    row[`col_${i + 1}`] = values[i] || null;
+  }
+  return row;
 }
 
 router.post("/upload", upload.single("file"), async (req: Request, res: Response) => {
@@ -145,6 +76,15 @@ router.post("/upload", upload.single("file"), async (req: Request, res: Response
     }
 
     const headers = parseCsvLine(lines[0]);
+    const numCols = headers.length;
+
+    const expectedCols = tableType === "facturacion" ? municipio.columnasFacturacion : municipio.columnasRecaudos;
+    if (expectedCols > 0 && numCols !== expectedCols) {
+      fs.unlinkSync(req.file.path);
+      res.status(400).json({ error: `El archivo tiene ${numCols} columnas pero se esperan ${expectedCols}. Descarga la plantilla para ver el formato correcto.` });
+      return;
+    }
+
     const BATCH_SIZE = 1000;
     let inserted = 0;
     let errors = 0;
@@ -153,9 +93,7 @@ router.post("/upload", upload.single("file"), async (req: Request, res: Response
       const batch = lines.slice(i, i + BATCH_SIZE);
       const rows = batch.map((line) => {
         const values = parseCsvLine(line);
-        return tableType === "facturacion"
-          ? mapFacturacionRow(values, headers)
-          : mapRecaudosRow(values, headers);
+        return mapGenericRow(values);
       });
 
       try {
@@ -195,6 +133,8 @@ router.get("/tables", async (_req: Request, res: Response) => {
         slug: m.slug,
         facturacion: facCount,
         recaudos: recCount,
+        encabezadosFacturacion: m.encabezadosFacturacion || [],
+        encabezadosRecaudos: m.encabezadosRecaudos || [],
       });
     }
 
@@ -280,6 +220,14 @@ router.post("/upload-data", async (req: Request, res: Response) => {
       return;
     }
 
+    const numCols = csvHeaders.length;
+
+    const expectedCols = tableType === "facturacion" ? municipio.columnasFacturacion : municipio.columnasRecaudos;
+    if (expectedCols > 0 && numCols !== expectedCols) {
+      res.status(400).json({ error: `El archivo tiene ${numCols} columnas pero se esperan ${expectedCols}. Descarga la plantilla para ver el formato correcto.` });
+      return;
+    }
+
     const BATCH_SIZE = 1000;
     let inserted = 0;
     let errors = 0;
@@ -287,9 +235,7 @@ router.post("/upload-data", async (req: Request, res: Response) => {
     for (let i = 0; i < csvRows.length; i += BATCH_SIZE) {
       const batch = csvRows.slice(i, i + BATCH_SIZE);
       const mappedRows = batch.map((values: string[]) => {
-        return tableType === "facturacion"
-          ? mapFacturacionRow(values, csvHeaders)
-          : mapRecaudosRow(values, csvHeaders);
+        return mapGenericRow(values);
       });
 
       try {

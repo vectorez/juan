@@ -4,6 +4,7 @@ import {
   integer,
   varchar,
   boolean,
+  json,
 } from "drizzle-orm/pg-core";
 
 export const municipios = pgTable("municipios", {
@@ -14,6 +15,8 @@ export const municipios = pgTable("municipios", {
   nombreMunicipio: varchar("nombre_municipio", { length: 100 }).notNull(),
   slug: varchar("slug", { length: 100 }).notNull().unique(),
   activo: boolean("activo").default(true).notNull(),
-  columnasFacturacion: integer("columnas_facturacion").notNull().default(25),
-  columnasRecaudos: integer("columnas_recaudos").notNull().default(25),
+  columnasFacturacion: integer("columnas_facturacion").notNull().default(0),
+  columnasRecaudos: integer("columnas_recaudos").notNull().default(0),
+  encabezadosFacturacion: json("encabezados_facturacion").$type<string[]>().default([]),
+  encabezadosRecaudos: json("encabezados_recaudos").$type<string[]>().default([]),
 });

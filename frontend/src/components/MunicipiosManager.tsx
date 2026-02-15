@@ -12,6 +12,7 @@ import {
   AlertCircle,
   CheckCircle,
   FileSpreadsheet,
+  CheckCircle2,
 } from "lucide-react";
 
 interface Municipio {
@@ -23,6 +24,8 @@ interface Municipio {
   activo: boolean;
   columnasFacturacion: number;
   columnasRecaudos: number;
+  encabezadosFacturacion: string[];
+  encabezadosRecaudos: string[];
 }
 
 interface FormData {
@@ -30,8 +33,6 @@ interface FormData {
   nombreDepartamento: string;
   codMunicipio: string;
   nombreMunicipio: string;
-  columnasFacturacion: string;
-  columnasRecaudos: string;
 }
 
 const emptyForm: FormData = {
@@ -39,8 +40,6 @@ const emptyForm: FormData = {
   nombreDepartamento: "",
   codMunicipio: "",
   nombreMunicipio: "",
-  columnasFacturacion: "25",
-  columnasRecaudos: "23",
 };
 
 export function MunicipiosManager() {
@@ -52,10 +51,12 @@ export function MunicipiosManager() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [detectingFacturacion, setDetectingFacturacion] = useState(false);
-  const [detectingRecaudos, setDetectingRecaudos] = useState(false);
-  const fileFacturacionRef = useRef<HTMLInputElement>(null);
-  const fileRecaudosRef = useRef<HTMLInputElement>(null);
+  const [encabezadosFacturacion, setEncabezadosFacturacion] = useState<string[]>([]);
+  const [encabezadosRecaudos, setEncabezadosRecaudos] = useState<string[]>([]);
+  const [detectingFact, setDetectingFact] = useState(false);
+  const [detectingRec, setDetectingRec] = useState(false);
+  const fileFactRef = useRef<HTMLInputElement>(null);
+  const fileRecRef = useRef<HTMLInputElement>(null);
 
   const fetchMunicipios = async () => {
     setLoading(true);
@@ -87,12 +88,10 @@ export function MunicipiosManager() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const detectColumnasFromFile = (file: File, tipo: "facturacion" | "recaudos") => {
-    if (tipo === "facturacion") {
-      setDetectingFacturacion(true);
-    } else {
-      setDetectingRecaudos(true);
-    }
+  const detectHeaders = (file: File, tipo: "facturacion" | "recaudos") => {
+    const setDetecting = tipo === "facturacion" ? setDetectingFact : setDetectingRec;
+    const setEncabezados = tipo === "facturacion" ? setEncabezadosFacturacion : setEncabezadosRecaudos;
+    setDetecting(true);
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
@@ -101,32 +100,32 @@ export function MunicipiosManager() {
         const ws = wb.Sheets[wb.SheetNames[0]];
         const json: string[][] = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false });
         if (json.length > 0 && json[0].length > 0) {
-          const numCols = json[0].length;
-          if (tipo === "facturacion") {
-            setForm(prev => ({ ...prev, columnasFacturacion: String(numCols) }));
-          } else {
-            setForm(prev => ({ ...prev, columnasRecaudos: String(numCols) }));
-          }
-          setSuccess(`Detectadas ${numCols} columnas en el archivo`);
+          const headers = json[0].map(h => (h || "").trim());
+          setEncabezados(headers);
+          setSuccess(`Detectadas ${headers.length} columnas para ${tipo}`);
         } else {
           setError("El archivo no contiene datos");
         }
       } catch {
         setError("Error al leer el archivo");
       } finally {
-        if (tipo === "facturacion") {
-          setDetectingFacturacion(false);
-        } else {
-          setDetectingRecaudos(false);
-        }
+        setDetecting(false);
       }
     };
     reader.readAsArrayBuffer(file);
   };
 
   const handleCreate = async () => {
-    if (!form.codDepartamento || !form.nombreDepartamento || !form.codMunicipio || !form.nombreMunicipio || !form.columnasFacturacion || !form.columnasRecaudos) {
+    if (!form.codDepartamento || !form.nombreDepartamento || !form.codMunicipio || !form.nombreMunicipio) {
       setError("Todos los campos son requeridos");
+      return;
+    }
+    if (encabezadosFacturacion.length === 0) {
+      setError("Debes subir un archivo de facturación para detectar los encabezados");
+      return;
+    }
+    if (encabezadosRecaudos.length === 0) {
+      setError("Debes subir un archivo de recaudos para detectar los encabezados");
       return;
     }
     setSaving(true);
@@ -137,11 +136,13 @@ export function MunicipiosManager() {
         nombreDepartamento: form.nombreDepartamento,
         codMunicipio: Number(form.codMunicipio),
         nombreMunicipio: form.nombreMunicipio,
-        columnasFacturacion: Number(form.columnasFacturacion),
-        columnasRecaudos: Number(form.columnasRecaudos),
+        encabezadosFacturacion,
+        encabezadosRecaudos,
       });
       setSuccess("Municipio creado exitosamente");
       setForm(emptyForm);
+      setEncabezadosFacturacion([]);
+      setEncabezadosRecaudos([]);
       setShowForm(false);
       fetchMunicipios();
     } catch (err: any) {
@@ -181,8 +182,6 @@ export function MunicipiosManager() {
       nombreDepartamento: m.nombreDepartamento,
       codMunicipio: String(m.codMunicipio),
       nombreMunicipio: m.nombreMunicipio,
-      columnasFacturacion: String(m.columnasFacturacion || 25),
-      columnasRecaudos: String(m.columnasRecaudos || 23),
     });
   };
 
@@ -210,6 +209,10 @@ export function MunicipiosManager() {
     setEditingId(null);
     setShowForm(false);
     setForm(emptyForm);
+    setEncabezadosFacturacion([]);
+    setEncabezadosRecaudos([]);
+    if (fileFactRef.current) fileFactRef.current.value = "";
+    if (fileRecRef.current) fileRecRef.current.value = "";
   };
 
   const renderForm = (isEditing: boolean) => (
@@ -268,92 +271,108 @@ export function MunicipiosManager() {
         </div>
       </div>
 
-      {/* Columnas section */}
-      <div className="border-t border-gray-200 pt-4 mt-4">
-        <h4 className="text-sm font-semibold text-gray-700 mb-3">Configuración de columnas</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Columnas Facturación
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                min="1"
-                value={form.columnasFacturacion}
-                onChange={(e) => handleChange("columnasFacturacion", e.target.value)}
-                className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="Ej: 25"
-              />
-              <input
-                ref={fileFacturacionRef}
-                type="file"
-                accept=".csv,.xlsx,.xls"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) detectColumnasFromFile(file, "facturacion");
-                }}
-                className="hidden"
-              />
-              <button
-                type="button"
-                onClick={() => fileFacturacionRef.current?.click()}
-                disabled={detectingFacturacion}
-                className="flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors disabled:opacity-50"
-                title="Detectar desde archivo"
-              >
-                {detectingFacturacion ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <FileSpreadsheet className="w-4 h-4" />
-                )}
-                {detectingFacturacion ? "Leyendo..." : "Auto"}
-              </button>
+      {/* Encabezados section - solo en creación */}
+      {!isEditing && (
+        <div className="border-t border-gray-200 pt-4 mt-4">
+          <h4 className="text-sm font-semibold text-gray-700 mb-3">Configuración de columnas (sube un archivo de ejemplo)</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Facturación */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Archivo Facturación
+              </label>
+              <div className="flex gap-2">
+                <input
+                  ref={fileFactRef}
+                  type="file"
+                  accept=".csv,.xlsx,.xls"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) detectHeaders(file, "facturacion");
+                  }}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileFactRef.current?.click()}
+                  disabled={detectingFact}
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors border-2 border-dashed ${
+                    encabezadosFacturacion.length > 0
+                      ? "border-green-300 bg-green-50 text-green-700"
+                      : "border-gray-300 bg-gray-50 text-gray-600 hover:border-indigo-300 hover:bg-indigo-50"
+                  } disabled:opacity-50`}
+                >
+                  {detectingFact ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Leyendo...</>
+                  ) : encabezadosFacturacion.length > 0 ? (
+                    <><CheckCircle2 className="w-4 h-4" /> {encabezadosFacturacion.length} columnas detectadas</>
+                  ) : (
+                    <><FileSpreadsheet className="w-4 h-4" /> Subir archivo de ejemplo</>
+                  )}
+                </button>
+              </div>
+              {encabezadosFacturacion.length > 0 && (
+                <div className="mt-2 max-h-32 overflow-y-auto bg-gray-50 rounded-lg border border-gray-200 p-2">
+                  <div className="flex flex-wrap gap-1">
+                    {encabezadosFacturacion.map((h, i) => (
+                      <span key={i} className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-xs font-mono">
+                        {h}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-            <p className="text-xs text-gray-500 mt-1">Sube un archivo para detectar automáticamente</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Columnas Recaudos
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                min="1"
-                value={form.columnasRecaudos}
-                onChange={(e) => handleChange("columnasRecaudos", e.target.value)}
-                className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="Ej: 23"
-              />
-              <input
-                ref={fileRecaudosRef}
-                type="file"
-                accept=".csv,.xlsx,.xls"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) detectColumnasFromFile(file, "recaudos");
-                }}
-                className="hidden"
-              />
-              <button
-                type="button"
-                onClick={() => fileRecaudosRef.current?.click()}
-                disabled={detectingRecaudos}
-                className="flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors disabled:opacity-50"
-                title="Detectar desde archivo"
-              >
-                {detectingRecaudos ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <FileSpreadsheet className="w-4 h-4" />
-                )}
-                {detectingRecaudos ? "Leyendo..." : "Auto"}
-              </button>
+            {/* Recaudos */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Archivo Recaudos
+              </label>
+              <div className="flex gap-2">
+                <input
+                  ref={fileRecRef}
+                  type="file"
+                  accept=".csv,.xlsx,.xls"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) detectHeaders(file, "recaudos");
+                  }}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileRecRef.current?.click()}
+                  disabled={detectingRec}
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors border-2 border-dashed ${
+                    encabezadosRecaudos.length > 0
+                      ? "border-green-300 bg-green-50 text-green-700"
+                      : "border-gray-300 bg-gray-50 text-gray-600 hover:border-indigo-300 hover:bg-indigo-50"
+                  } disabled:opacity-50`}
+                >
+                  {detectingRec ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Leyendo...</>
+                  ) : encabezadosRecaudos.length > 0 ? (
+                    <><CheckCircle2 className="w-4 h-4" /> {encabezadosRecaudos.length} columnas detectadas</>
+                  ) : (
+                    <><FileSpreadsheet className="w-4 h-4" /> Subir archivo de ejemplo</>
+                  )}
+                </button>
+              </div>
+              {encabezadosRecaudos.length > 0 && (
+                <div className="mt-2 max-h-32 overflow-y-auto bg-gray-50 rounded-lg border border-gray-200 p-2">
+                  <div className="flex flex-wrap gap-1">
+                    {encabezadosRecaudos.map((h, i) => (
+                      <span key={i} className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-mono">
+                        {h}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-            <p className="text-xs text-gray-500 mt-1">Sube un archivo para detectar automáticamente</p>
           </div>
         </div>
-      </div>
+      )}
 
       <div className="flex gap-2 mt-4">
         <button

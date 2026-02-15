@@ -114,26 +114,64 @@
 - `frontend/src/components/FileUploader.tsx` — **Archivo eliminado** (funcionalidad migrada a TableStats)
 - `TableStats` ahora siempre visible, maneja toda la subida de archivos desde cards de municipio
 
-### Configuración de columnas por municipio con detección automática
-- `backend/src/db/schema.ts` — Tabla `municipios` actualizada con nuevos campos:
-  - `columnas_facturacion` (INTEGER, default 25)
-  - `columnas_recaudos` (INTEGER, default 23)
-- `backend/src/db/dynamic-tables.ts` — **Función `createMunicipioTables` reescrita**:
-  - Ahora recibe `columnasFacturacion` y `columnasRecaudos` como parámetros
-  - Crea tablas dinámicas con columnas genéricas `col_1, col_2, ... col_N` (todas TEXT)
-  - Elimina esquema fijo anterior de 25/23 columnas con nombres específicos
-  - Cada municipio define su propia estructura de columnas
-- `backend/src/routes/municipios.ts` — POST `/api/municipios` actualizado:
-  - Requiere campos `columnasFacturacion` y `columnasRecaudos` en el body
-  - Valida y almacena valores en la BD
-  - Pasa valores a `createMunicipioTables` para crear tablas con estructura correcta
-- `frontend/src/components/MunicipiosManager.tsx` — **Formulario de creación mejorado**:
-  - Nuevos campos numéricos para "Columnas Facturación" y "Columnas Recaudos"
-  - Botón **"Auto"** junto a cada campo para detectar columnas automáticamente:
-    - Sube archivo CSV/Excel de muestra
-    - Parsea con SheetJS client-side
-    - Detecta número de columnas en primera fila (headers)
-    - Rellena automáticamente el campo correspondiente
-  - Valores por defecto: 25 facturación, 23 recaudos
-  - Validación obligatoria antes de crear municipio
-- Ejecutado `drizzle-kit push` para aplicar cambios en PostgreSQL
+### Columnas dinámicas y detección automática al subir archivos
+- `backend/src/db/schema.ts` — Tabla `municipios` con campos internos:
+  - `columnas_facturacion` (INTEGER, default 25) y `columnas_recaudos` (INTEGER, default 23)
+  - Se actualizan automáticamente al subir archivo (no editables manualmente)
+- `backend/src/db/dynamic-tables.ts`:
+  - `createMunicipioTables` crea tablas con columnas genéricas `col_1, col_2, ... col_N` (TEXT)
+  - **Nueva función `ensureTableColumns`**: verifica columnas existentes en la tabla y agrega las faltantes con `ALTER TABLE` si el archivo tiene más columnas que la tabla
+- `backend/src/routes/upload.ts` — **Refactorizado completamente**:
+  - Eliminadas funciones `mapFacturacionRow` y `mapRecaudosRow` (mapeo a nombres fijos)
+  - Nueva función `mapGenericRow`: mapea valores CSV a `col_1, col_2, ...` en orden
+  - Endpoints `/upload` y `/upload-data` ahora:
+    - Detectan número de columnas del archivo automáticamente
+    - Llaman `ensureTableColumns` para ajustar estructura de tabla si es necesario
+    - Actualizan `columnasFacturacion`/`columnasRecaudos` en BD automáticamente
+- `backend/src/routes/municipios.ts` — POST `/api/municipios` simplificado:
+  - Ya no requiere `columnasFacturacion`/`columnasRecaudos` en el body
+  - Usa defaults del esquema para crear tablas iniciales
+- `frontend/src/components/MunicipiosManager.tsx` — **Formulario simplificado**:
+  - Eliminados campos manuales de columnas, refs de archivos y función de detección
+  - Solo campos básicos: código/nombre departamento, código/nombre municipio
+  - Las columnas se configuran automáticamente al subir el primer archivo
+
+### Botón Ver datos desde tarjeta de municipio
+- `frontend/src/components/TableStats.tsx`:
+  - Nuevo botón **"Ver"** con ícono Eye en cada card de municipio
+  - Abre modal fullscreen (`max-w-7xl`) con `DataViewer` integrado
+  - Modal con header, botón cerrar y scroll interno
+- `frontend/src/components/DataViewer.tsx`:
+  - Nuevo prop opcional `initialSlug` para preseleccionar municipio
+  - Oculta selector de municipio cuando viene preseleccionado (uso en modal)
+- `frontend/src/App.tsx`:
+  - Eliminada tab "Ver Datos" (ahora se accede desde botón "Ver" en cards)
+  - Solo queda tab "Municipios"
+
+### Encabezados de columnas, validación y plantillas Excel
+- `backend/src/db/schema.ts` — Nuevos campos JSON en tabla `municipios`:
+  - `encabezados_facturacion` (JSON, array de strings) — nombres de columnas
+  - `encabezados_recaudos` (JSON, array de strings) — nombres de columnas
+  - `columnas_facturacion` y `columnas_recaudos` ahora default 0 (se configuran al crear)
+- `backend/src/routes/municipios.ts`:
+  - POST requiere `encabezadosFacturacion` y `encabezadosRecaudos` (arrays detectados del archivo)
+  - Calcula `columnasFacturacion`/`columnasRecaudos` automáticamente desde la longitud del array
+  - PUT permite actualizar encabezados opcionalmente
+- `backend/src/routes/upload.ts` — **Refactorizado**:
+  - Eliminadas funciones `mapFacturacionRow` y `mapRecaudosRow` (mapeo fijo)
+  - Nueva función `mapGenericRow`: mapea valores a `col_1, col_2, ...` en orden
+  - **Validación de columnas**: al subir archivo, valida que tenga el número exacto de columnas configuradas
+  - Si no coincide, rechaza con error descriptivo sugiriendo descargar la plantilla
+  - Endpoint `/api/tables` ahora devuelve `encabezadosFacturacion` y `encabezadosRecaudos`
+- `frontend/src/components/MunicipiosManager.tsx` — **Formulario con detección de encabezados**:
+  - Al crear municipio, obligatorio subir archivo de ejemplo para facturación y recaudos
+  - Botones "Subir archivo de ejemplo" con estados visuales (vacío → leyendo → detectado)
+  - Muestra encabezados detectados como tags coloreados (indigo para facturación, purple para recaudos)
+  - Spinner de carga mientras lee el archivo con SheetJS
+  - Validación: no permite crear sin ambos conjuntos de encabezados
+  - Envía arrays de encabezados al backend al crear
+- `frontend/src/components/TableStats.tsx` — **Botón descarga de plantilla**:
+  - Ícono Download junto a cada tipo de tabla en las cards
+  - Genera archivo Excel con una fila de encabezados usando SheetJS
+  - Nombre del archivo: `plantilla_{slug}_{tipo}.xlsx`
+  - Solo visible si el municipio tiene encabezados configurados

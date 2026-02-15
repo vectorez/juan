@@ -42,10 +42,19 @@ router.get("/municipios/:id", async (req: Request, res: Response) => {
 
 router.post("/municipios", async (req: Request, res: Response) => {
   try {
-    const { codDepartamento, nombreDepartamento, codMunicipio, nombreMunicipio, columnasFacturacion, columnasRecaudos } = req.body;
+    const { codDepartamento, nombreDepartamento, codMunicipio, nombreMunicipio, encabezadosFacturacion, encabezadosRecaudos } = req.body;
 
-    if (!codDepartamento || !nombreDepartamento || !codMunicipio || !nombreMunicipio || !columnasFacturacion || !columnasRecaudos) {
-      res.status(400).json({ error: "Todos los campos son requeridos: codDepartamento, nombreDepartamento, codMunicipio, nombreMunicipio, columnasFacturacion, columnasRecaudos" });
+    if (!codDepartamento || !nombreDepartamento || !codMunicipio || !nombreMunicipio) {
+      res.status(400).json({ error: "Todos los campos son requeridos: codDepartamento, nombreDepartamento, codMunicipio, nombreMunicipio" });
+      return;
+    }
+
+    if (!Array.isArray(encabezadosFacturacion) || encabezadosFacturacion.length === 0) {
+      res.status(400).json({ error: "Debes subir un archivo de facturación para detectar los encabezados" });
+      return;
+    }
+    if (!Array.isArray(encabezadosRecaudos) || encabezadosRecaudos.length === 0) {
+      res.status(400).json({ error: "Debes subir un archivo de recaudos para detectar los encabezados" });
       return;
     }
 
@@ -58,11 +67,13 @@ router.post("/municipios", async (req: Request, res: Response) => {
       nombreMunicipio,
       slug,
       activo: true,
-      columnasFacturacion: Number(columnasFacturacion),
-      columnasRecaudos: Number(columnasRecaudos),
+      columnasFacturacion: encabezadosFacturacion.length,
+      columnasRecaudos: encabezadosRecaudos.length,
+      encabezadosFacturacion,
+      encabezadosRecaudos,
     }).returning();
 
-    await createMunicipioTables(slug, Number(columnasFacturacion), Number(columnasRecaudos));
+    await createMunicipioTables(slug, encabezadosFacturacion.length, encabezadosRecaudos.length);
 
     res.status(201).json({ data: created });
   } catch (error) {
@@ -74,7 +85,7 @@ router.post("/municipios", async (req: Request, res: Response) => {
 router.put("/municipios/:id", async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id as string);
-    const { codDepartamento, nombreDepartamento, codMunicipio, nombreMunicipio, activo } = req.body;
+    const { codDepartamento, nombreDepartamento, codMunicipio, nombreMunicipio, activo, encabezadosFacturacion, encabezadosRecaudos } = req.body;
 
     const updateData: Record<string, unknown> = {};
     if (codDepartamento !== undefined) updateData.codDepartamento = Number(codDepartamento);
@@ -82,6 +93,14 @@ router.put("/municipios/:id", async (req: Request, res: Response) => {
     if (codMunicipio !== undefined) updateData.codMunicipio = Number(codMunicipio);
     if (nombreMunicipio !== undefined) updateData.nombreMunicipio = nombreMunicipio;
     if (activo !== undefined) updateData.activo = activo;
+    if (Array.isArray(encabezadosFacturacion)) {
+      updateData.encabezadosFacturacion = encabezadosFacturacion;
+      updateData.columnasFacturacion = encabezadosFacturacion.length;
+    }
+    if (Array.isArray(encabezadosRecaudos)) {
+      updateData.encabezadosRecaudos = encabezadosRecaudos;
+      updateData.columnasRecaudos = encabezadosRecaudos.length;
+    }
 
     if (Object.keys(updateData).length === 0) {
       res.status(400).json({ error: "No se proporcionaron campos para actualizar" });
