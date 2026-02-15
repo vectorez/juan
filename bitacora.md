@@ -37,6 +37,9 @@
 - Creada base de datos `juan_db` en PostgreSQL local
 - Ejecutado `drizzle-kit push` para crear tablas `ap_apartado` y `ap_apartado_recaudos`
 
+### Comando Drizzle Studio
+- Añadido script `db:studio` en `backend/package.json` para abrir Drizzle Studio
+
 ### Dependencias actualizadas
 - `drizzle-orm` actualizado de 0.34.1 → 0.45.1
 - `drizzle-kit` actualizado de 0.28.1 → 0.31.9 (compatibilidad)
