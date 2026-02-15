@@ -27,7 +27,7 @@ router.get("/municipios", async (_req: Request, res: Response) => {
 
 router.get("/municipios/:id", async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     const [municipio] = await db.select().from(municipios).where(eq(municipios.id, id));
     if (!municipio) {
       res.status(404).json({ error: "Municipio no encontrado" });
@@ -71,7 +71,7 @@ router.post("/municipios", async (req: Request, res: Response) => {
 
 router.put("/municipios/:id", async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     const { codDepartamento, nombreDepartamento, codMunicipio, nombreMunicipio, activo } = req.body;
 
     const updateData: Record<string, unknown> = {};
@@ -102,7 +102,7 @@ router.put("/municipios/:id", async (req: Request, res: Response) => {
 
 router.delete("/municipios/:id", async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     const [deleted] = await db.delete(municipios).where(eq(municipios.id, id)).returning();
 
     if (!deleted) {
