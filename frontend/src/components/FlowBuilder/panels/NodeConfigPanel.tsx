@@ -30,22 +30,60 @@ const OPERATORS = [
   { value: "startsWith", label: "Empieza con" },
 ];
 
+function sanitizeColumnName(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9_]/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "")
+    .substring(0, 63) || "col";
+}
+
 function getColumnsForNode(
   node: PipelineNode,
   municipios: MunicipioOption[]
 ): string[] {
+  console.log("[getColumnsForNode] node.type:", node.type, "node.data:", node.data);
+  console.log("[getColumnsForNode] municipios:", municipios);
+  
   // Para source, retornar columnas del municipio seleccionado
   if (node.type === "source") {
     const d = node.data as SourceNodeData;
     const mun = municipios.find((m) => m.slug === d.municipioSlug);
+    console.log("[getColumnsForNode] source - municipioSlug:", d.municipioSlug, "found:", mun);
     if (!mun) return [];
     const headers =
       d.tableType === "facturacion"
         ? mun.encabezadosFacturacion
         : mun.encabezadosRecaudos;
-    return headers?.map((_, i) => `col_${i + 1}`) || [];
+    console.log("[getColumnsForNode] headers:", headers);
+    const sanitized = headers?.map((h) => sanitizeColumnName(h)) || [];
+    console.log("[getColumnsForNode] sanitized:", sanitized);
+    return sanitized;
   }
-  // Para otros nodos, retornar columnas genéricas
+  
+  // Para otros nodos, intentar obtener columnas de todos los municipios
+  // (en un pipeline típico, solo habrá un municipio)
+  console.log("[getColumnsForNode] not a source, trying to get columns from available municipios");
+  if (municipios.length > 0) {
+    // Usar el primer municipio y combinar encabezados de ambas tablas
+    const mun = municipios[0];
+    const allHeaders = [
+      ...(mun.encabezadosFacturacion || []),
+      ...(mun.encabezadosRecaudos || [])
+    ];
+    // Eliminar duplicados
+    const uniqueHeaders = Array.from(new Set(allHeaders));
+    console.log("[getColumnsForNode] unique headers from municipio:", uniqueHeaders);
+    const sanitized = uniqueHeaders.map((h) => sanitizeColumnName(h));
+    console.log("[getColumnsForNode] sanitized:", sanitized);
+    if (sanitized.length > 0) return sanitized;
+  }
+  
+  // Fallback: columnas genéricas
+  console.log("[getColumnsForNode] returning generic columns");
   return Array.from({ length: 30 }, (_, i) => `col_${i + 1}`);
 }
 
