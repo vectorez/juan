@@ -4,66 +4,23 @@ function sanitizeSlug(slug: string): string {
   return slug.replace(/[^a-z0-9_]/g, "");
 }
 
-export async function createMunicipioTables(slug: string) {
+export async function createMunicipioTables(slug: string, columnasFacturacion: number, columnasRecaudos: number) {
   const s = sanitizeSlug(slug);
+
+  const colsFacturacion = Array.from({ length: columnasFacturacion }, (_, i) => `col_${i + 1} TEXT`).join(", ");
+  const colsRecaudos = Array.from({ length: columnasRecaudos }, (_, i) => `col_${i + 1} TEXT`).join(", ");
 
   await client.unsafe(`
     CREATE TABLE IF NOT EXISTS "${s}_facturacion" (
       id SERIAL PRIMARY KEY,
-      ciclo INTEGER,
-      servicio_suscrito_dependiente BIGINT,
-      servicio_suscrito_padre BIGINT,
-      tipo_servicio INTEGER,
-      descripcion_servicio VARCHAR(200),
-      suscripcion BIGINT,
-      fecha_generacion_factura VARCHAR(20),
-      ano_mes_factura INTEGER,
-      nro_factura BIGINT,
-      categoria INTEGER,
-      sub_categoria INTEGER,
-      valor_impuesto NUMERIC(18,4),
-      valor_cartera NUMERIC(18,4),
-      intereses_mora NUMERIC(18,4),
-      valor_reconocimiento NUMERIC(18,4),
-      valor_separacion NUMERIC(18,4),
-      valor_financiacion NUMERIC(18,4),
-      valor_total_facturado NUMERIC(18,4),
-      direccion VARCHAR(300),
-      nro_instalacion VARCHAR(50),
-      sujeto_pasivo_pdto_dependiente VARCHAR(200),
-      identificacion_sujeto_pasivo VARCHAR(50),
-      cod_departamento INTEGER,
-      cod_municipio INTEGER,
-      consumo_energia NUMERIC(18,4)
+      ${colsFacturacion}
     )
   `);
 
   await client.unsafe(`
     CREATE TABLE IF NOT EXISTS "${s}_recaudos" (
       id SERIAL PRIMARY KEY,
-      servicio_suscrito_dependiente BIGINT,
-      servicio_suscrito_padre BIGINT,
-      tipo_servicio INTEGER,
-      descripcion_servicio VARCHAR(200),
-      suscripcion BIGINT,
-      ano_mes_factura INTEGER,
-      nro_factura BIGINT,
-      categoria INTEGER,
-      sub_categoria INTEGER,
-      valor_recaudo_impuesto NUMERIC(18,4),
-      valor_recaudo_intereses NUMERIC(18,4),
-      valor_recaudo_separacion NUMERIC(18,4),
-      valor_reconocimiento NUMERIC(18,4),
-      valor_otros_recaudos NUMERIC(18,4),
-      valor_total_recaudos NUMERIC(18,4),
-      fecha_pago VARCHAR(50),
-      direccion VARCHAR(300),
-      nro_instalacion VARCHAR(50),
-      sujeto_pasivo_pdto_dependiente VARCHAR(200),
-      identificacion_sujeto_pasivo VARCHAR(50),
-      cod_departamento INTEGER,
-      cod_municipio INTEGER,
-      valor_reconocimiento_covid NUMERIC(18,4)
+      ${colsRecaudos}
     )
   `);
 }

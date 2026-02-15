@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import * as XLSX from "xlsx";
 import {
   Plus,
   Pencil,
@@ -10,6 +11,7 @@ import {
   MapPin,
   AlertCircle,
   CheckCircle,
+  FileSpreadsheet,
 } from "lucide-react";
 
 interface Municipio {
@@ -19,6 +21,8 @@ interface Municipio {
   codMunicipio: number;
   nombreMunicipio: string;
   activo: boolean;
+  columnasFacturacion: number;
+  columnasRecaudos: number;
 }
 
 interface FormData {
@@ -26,6 +30,8 @@ interface FormData {
   nombreDepartamento: string;
   codMunicipio: string;
   nombreMunicipio: string;
+  columnasFacturacion: string;
+  columnasRecaudos: string;
 }
 
 const emptyForm: FormData = {
@@ -33,6 +39,8 @@ const emptyForm: FormData = {
   nombreDepartamento: "",
   codMunicipio: "",
   nombreMunicipio: "",
+  columnasFacturacion: "25",
+  columnasRecaudos: "23",
 };
 
 export function MunicipiosManager() {
@@ -44,6 +52,8 @@ export function MunicipiosManager() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const fileFacturacionRef = useRef<HTMLInputElement>(null);
+  const fileRecaudosRef = useRef<HTMLInputElement>(null);
 
   const fetchMunicipios = async () => {
     setLoading(true);
@@ -75,8 +85,34 @@ export function MunicipiosManager() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const detectColumnasFromFile = (file: File, tipo: "facturacion" | "recaudos") => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const wb = XLSX.read(data, { type: "array" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const json: string[][] = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false });
+        if (json.length > 0 && json[0].length > 0) {
+          const numCols = json[0].length;
+          if (tipo === "facturacion") {
+            setForm(prev => ({ ...prev, columnasFacturacion: String(numCols) }));
+          } else {
+            setForm(prev => ({ ...prev, columnasRecaudos: String(numCols) }));
+          }
+          setSuccess(`Detectadas ${numCols} columnas en el archivo`);
+        } else {
+          setError("El archivo no contiene datos");
+        }
+      } catch {
+        setError("Error al leer el archivo");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
   const handleCreate = async () => {
-    if (!form.codDepartamento || !form.nombreDepartamento || !form.codMunicipio || !form.nombreMunicipio) {
+    if (!form.codDepartamento || !form.nombreDepartamento || !form.codMunicipio || !form.nombreMunicipio || !form.columnasFacturacion || !form.columnasRecaudos) {
       setError("Todos los campos son requeridos");
       return;
     }
@@ -88,6 +124,8 @@ export function MunicipiosManager() {
         nombreDepartamento: form.nombreDepartamento,
         codMunicipio: Number(form.codMunicipio),
         nombreMunicipio: form.nombreMunicipio,
+        columnasFacturacion: Number(form.columnasFacturacion),
+        columnasRecaudos: Number(form.columnasRecaudos),
       });
       setSuccess("Municipio creado exitosamente");
       setForm(emptyForm);
@@ -130,6 +168,8 @@ export function MunicipiosManager() {
       nombreDepartamento: m.nombreDepartamento,
       codMunicipio: String(m.codMunicipio),
       nombreMunicipio: m.nombreMunicipio,
+      columnasFacturacion: String(m.columnasFacturacion || 25),
+      columnasRecaudos: String(m.columnasRecaudos || 23),
     });
   };
 
@@ -214,6 +254,84 @@ export function MunicipiosManager() {
           />
         </div>
       </div>
+
+      {/* Columnas section */}
+      <div className="border-t border-gray-200 pt-4 mt-4">
+        <h4 className="text-sm font-semibold text-gray-700 mb-3">Configuración de columnas</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Columnas Facturación
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                min="1"
+                value={form.columnasFacturacion}
+                onChange={(e) => handleChange("columnasFacturacion", e.target.value)}
+                className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="Ej: 25"
+              />
+              <input
+                ref={fileFacturacionRef}
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) detectColumnasFromFile(file, "facturacion");
+                }}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileFacturacionRef.current?.click()}
+                className="flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors"
+                title="Detectar desde archivo"
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                Auto
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Sube un archivo para detectar automáticamente</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Columnas Recaudos
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                min="1"
+                value={form.columnasRecaudos}
+                onChange={(e) => handleChange("columnasRecaudos", e.target.value)}
+                className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="Ej: 23"
+              />
+              <input
+                ref={fileRecaudosRef}
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) detectColumnasFromFile(file, "recaudos");
+                }}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileRecaudosRef.current?.click()}
+                className="flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors"
+                title="Detectar desde archivo"
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                Auto
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Sube un archivo para detectar automáticamente</p>
+          </div>
+        </div>
+      </div>
+
       <div className="flex gap-2 mt-4">
         <button
           onClick={isEditing ? handleUpdate : handleCreate}

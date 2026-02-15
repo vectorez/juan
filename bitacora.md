@@ -113,3 +113,27 @@
 - `frontend/src/App.tsx` — **Eliminada tab "Subir CSV"**, solo quedan "Ver Datos" y "Municipios"
 - `frontend/src/components/FileUploader.tsx` — **Archivo eliminado** (funcionalidad migrada a TableStats)
 - `TableStats` ahora siempre visible, maneja toda la subida de archivos desde cards de municipio
+
+### Configuración de columnas por municipio con detección automática
+- `backend/src/db/schema.ts` — Tabla `municipios` actualizada con nuevos campos:
+  - `columnas_facturacion` (INTEGER, default 25)
+  - `columnas_recaudos` (INTEGER, default 23)
+- `backend/src/db/dynamic-tables.ts` — **Función `createMunicipioTables` reescrita**:
+  - Ahora recibe `columnasFacturacion` y `columnasRecaudos` como parámetros
+  - Crea tablas dinámicas con columnas genéricas `col_1, col_2, ... col_N` (todas TEXT)
+  - Elimina esquema fijo anterior de 25/23 columnas con nombres específicos
+  - Cada municipio define su propia estructura de columnas
+- `backend/src/routes/municipios.ts` — POST `/api/municipios` actualizado:
+  - Requiere campos `columnasFacturacion` y `columnasRecaudos` en el body
+  - Valida y almacena valores en la BD
+  - Pasa valores a `createMunicipioTables` para crear tablas con estructura correcta
+- `frontend/src/components/MunicipiosManager.tsx` — **Formulario de creación mejorado**:
+  - Nuevos campos numéricos para "Columnas Facturación" y "Columnas Recaudos"
+  - Botón **"Auto"** junto a cada campo para detectar columnas automáticamente:
+    - Sube archivo CSV/Excel de muestra
+    - Parsea con SheetJS client-side
+    - Detecta número de columnas en primera fila (headers)
+    - Rellena automáticamente el campo correspondiente
+  - Valores por defecto: 25 facturación, 23 recaudos
+  - Validación obligatoria antes de crear municipio
+- Ejecutado `drizzle-kit push` para aplicar cambios en PostgreSQL

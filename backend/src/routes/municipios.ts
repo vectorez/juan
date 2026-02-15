@@ -42,10 +42,10 @@ router.get("/municipios/:id", async (req: Request, res: Response) => {
 
 router.post("/municipios", async (req: Request, res: Response) => {
   try {
-    const { codDepartamento, nombreDepartamento, codMunicipio, nombreMunicipio } = req.body;
+    const { codDepartamento, nombreDepartamento, codMunicipio, nombreMunicipio, columnasFacturacion, columnasRecaudos } = req.body;
 
-    if (!codDepartamento || !nombreDepartamento || !codMunicipio || !nombreMunicipio) {
-      res.status(400).json({ error: "Todos los campos son requeridos: codDepartamento, nombreDepartamento, codMunicipio, nombreMunicipio" });
+    if (!codDepartamento || !nombreDepartamento || !codMunicipio || !nombreMunicipio || !columnasFacturacion || !columnasRecaudos) {
+      res.status(400).json({ error: "Todos los campos son requeridos: codDepartamento, nombreDepartamento, codMunicipio, nombreMunicipio, columnasFacturacion, columnasRecaudos" });
       return;
     }
 
@@ -58,9 +58,11 @@ router.post("/municipios", async (req: Request, res: Response) => {
       nombreMunicipio,
       slug,
       activo: true,
+      columnasFacturacion: Number(columnasFacturacion),
+      columnasRecaudos: Number(columnasRecaudos),
     }).returning();
 
-    await createMunicipioTables(slug);
+    await createMunicipioTables(slug, Number(columnasFacturacion), Number(columnasRecaudos));
 
     res.status(201).json({ data: created });
   } catch (error) {

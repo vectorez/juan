@@ -14,4 +14,6 @@ export const municipios = pgTable("municipios", {
   nombreMunicipio: varchar("nombre_municipio", { length: 100 }).notNull(),
   slug: varchar("slug", { length: 100 }).notNull().unique(),
   activo: boolean("activo").default(true).notNull(),
+  columnasFacturacion: integer("columnas_facturacion").notNull().default(25),
+  columnasRecaudos: integer("columnas_recaudos").notNull().default(23),
 });
