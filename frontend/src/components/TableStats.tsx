@@ -56,7 +56,7 @@ export function TableStats() {
   const [deleting, setDeleting] = useState(false);
 
   const [uploadModal, setUploadModal] = useState<UploadModal | null>(null);
-  const [uploadTableType, setUploadTableType] = useState<"facturacion" | "recaudos">("facturacion");
+  const [uploadTableType, setUploadTableType] = useState<"" | "facturacion" | "recaudos">("")
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadHeaders, setUploadHeaders] = useState<string[]>([]);
   const [uploadRows, setUploadRows] = useState<string[][]>([]);
@@ -106,7 +106,7 @@ export function TableStats() {
 
   const openUploadModal = (slug: string, municipio: string) => {
     setUploadModal({ slug, municipio });
-    setUploadTableType("facturacion");
+    setUploadTableType("");
     setUploadFile(null);
     setUploadHeaders([]);
     setUploadRows([]);
@@ -191,7 +191,7 @@ export function TableStats() {
     try {
       const res = await axios.post<UploadResult>("/api/upload-data", {
         municipioSlug: uploadModal.slug,
-        tableType: uploadTableType,
+        tableType: uploadTableType as "facturacion" | "recaudos",
         headers: uploadHeaders,
         rows: uploadRows,
       });
@@ -326,17 +326,18 @@ export function TableStats() {
               </label>
               <select
                 value={uploadTableType}
-                onChange={(e) => setUploadTableType(e.target.value as "facturacion" | "recaudos")}
+                onChange={(e) => setUploadTableType(e.target.value as "" | "facturacion" | "recaudos")}
                 disabled={uploading}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
               >
+                <option value="" disabled>— Selecciona un tipo —</option>
                 <option value="facturacion">Facturación</option>
                 <option value="recaudos">Recaudos</option>
               </select>
             </div>
 
             {/* Step 2: File picker */}
-            {!uploadFile && !uploadResult && (
+            {!uploadFile && !uploadResult && uploadTableType && (
               <div>
                 <input
                   ref={fileInputRef}

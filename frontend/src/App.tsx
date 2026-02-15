@@ -1,23 +1,15 @@
 import { useState } from "react";
-import { FileUploader } from "./components/FileUploader";
 import { DataViewer } from "./components/DataViewer";
 import { TableStats } from "./components/TableStats";
 import { MunicipiosManager } from "./components/MunicipiosManager";
-import { Database, Upload, Table, MapPin } from "lucide-react";
+import { Database, Table, MapPin } from "lucide-react";
 
-type Tab = "upload" | "data" | "municipios";
+type Tab = "data" | "municipios";
 
 function App() {
-  const [activeTab, setActiveTab] = useState<Tab>("upload");
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [isFileLoaded, setIsFileLoaded] = useState(false);
-
-  const handleUploadSuccess = () => {
-    setRefreshKey((k) => k + 1);
-  };
+  const [activeTab, setActiveTab] = useState<Tab>("data");
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
-    { key: "upload", label: "Subir CSV", icon: <Upload className="w-4 h-4" /> },
     { key: "data", label: "Ver Datos", icon: <Table className="w-4 h-4" /> },
     { key: "municipios", label: "Municipios", icon: <MapPin className="w-4 h-4" /> },
   ];
@@ -52,11 +44,8 @@ function App() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {!isFileLoaded && <TableStats key={`stats-${refreshKey}`} />}
+        <TableStats />
 
-        {activeTab === "upload" && (
-          <FileUploader onSuccess={handleUploadSuccess} onFileChange={setIsFileLoaded} />
-        )}
         {activeTab === "data" && <DataViewer />}
         {activeTab === "municipios" && <MunicipiosManager />}
       </main>
