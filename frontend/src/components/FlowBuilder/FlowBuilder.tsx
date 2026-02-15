@@ -422,6 +422,8 @@ export function FlowBuilder() {
         {selectedNode && (
           <NodeConfigPanel
             node={selectedNode}
+            nodes={nodes as PipelineNode[]}
+            edges={edges as PipelineEdge[]}
             municipios={municipios}
             onUpdate={updateNodeData}
             onClose={() => setSelectedNodeId(null)}

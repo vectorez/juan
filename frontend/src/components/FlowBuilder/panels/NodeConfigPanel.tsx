@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { X, Plus, Trash2 } from "lucide-react";
 import type {
   PipelineNode,
+  PipelineEdge,
   MunicipioOption,
   SourceNodeData,
   FilterNodeData,
@@ -14,6 +15,8 @@ import type {
 
 interface Props {
   node: PipelineNode;
+  nodes: PipelineNode[];
+  edges: PipelineEdge[];
   municipios: MunicipioOption[];
   onUpdate: (nodeId: string, data: Record<string, unknown>) => void;
   onClose: () => void;
@@ -41,53 +44,70 @@ function sanitizeColumnName(name: string): string {
     .substring(0, 63) || "col";
 }
 
+function findSourceNode(
+  currentNodeId: string,
+  nodes: PipelineNode[],
+  edges: PipelineEdge[]
+): PipelineNode | null {
+  // Rastrear hacia atrás hasta encontrar un nodo Source
+  const visited = new Set<string>();
+  const queue = [currentNodeId];
+  
+  while (queue.length > 0) {
+    const nodeId = queue.shift()!;
+    if (visited.has(nodeId)) continue;
+    visited.add(nodeId);
+    
+    const node = nodes.find((n) => n.id === nodeId);
+    if (!node) continue;
+    if (node.type === "source") return node;
+    
+    // Buscar nodos que conectan a este
+    const incomingEdges = edges.filter((e) => e.target === nodeId);
+    for (const edge of incomingEdges) {
+      queue.push(edge.source);
+    }
+  }
+  
+  return null;
+}
+
 function getColumnsForNode(
   node: PipelineNode,
+  nodes: PipelineNode[],
+  edges: PipelineEdge[],
   municipios: MunicipioOption[]
 ): string[] {
-  console.log("[getColumnsForNode] node.type:", node.type, "node.data:", node.data);
-  console.log("[getColumnsForNode] municipios:", municipios);
-  
   // Para source, retornar columnas del municipio seleccionado
   if (node.type === "source") {
     const d = node.data as SourceNodeData;
     const mun = municipios.find((m) => m.slug === d.municipioSlug);
-    console.log("[getColumnsForNode] source - municipioSlug:", d.municipioSlug, "found:", mun);
     if (!mun) return [];
     const headers =
       d.tableType === "facturacion"
         ? mun.encabezadosFacturacion
         : mun.encabezadosRecaudos;
-    console.log("[getColumnsForNode] headers:", headers);
-    const sanitized = headers?.map((h) => sanitizeColumnName(h)) || [];
-    console.log("[getColumnsForNode] sanitized:", sanitized);
-    return sanitized;
+    return headers?.map((h) => sanitizeColumnName(h)) || [];
   }
   
-  // Para otros nodos, intentar obtener columnas de todos los municipios
-  // (en un pipeline típico, solo habrá un municipio)
-  console.log("[getColumnsForNode] not a source, trying to get columns from available municipios");
-  if (municipios.length > 0) {
-    // Usar el primer municipio y combinar encabezados de ambas tablas
-    const mun = municipios[0];
-    const allHeaders = [
-      ...(mun.encabezadosFacturacion || []),
-      ...(mun.encabezadosRecaudos || [])
-    ];
-    // Eliminar duplicados
-    const uniqueHeaders = Array.from(new Set(allHeaders));
-    console.log("[getColumnsForNode] unique headers from municipio:", uniqueHeaders);
-    const sanitized = uniqueHeaders.map((h) => sanitizeColumnName(h));
-    console.log("[getColumnsForNode] sanitized:", sanitized);
-    if (sanitized.length > 0) return sanitized;
+  // Para otros nodos, buscar el nodo Source conectado
+  const sourceNode = findSourceNode(node.id, nodes, edges);
+  if (sourceNode) {
+    const d = sourceNode.data as SourceNodeData;
+    const mun = municipios.find((m) => m.slug === d.municipioSlug);
+    if (!mun) return [];
+    const headers =
+      d.tableType === "facturacion"
+        ? mun.encabezadosFacturacion
+        : mun.encabezadosRecaudos;
+    return headers?.map((h) => sanitizeColumnName(h)) || [];
   }
   
   // Fallback: columnas genéricas
-  console.log("[getColumnsForNode] returning generic columns");
   return Array.from({ length: 30 }, (_, i) => `col_${i + 1}`);
 }
 
-export function NodeConfigPanel({ node, municipios, onUpdate, onClose }: Props) {
+export function NodeConfigPanel({ node, nodes, edges, municipios, onUpdate, onClose }: Props) {
   const [localData, setLocalData] = useState<Record<string, unknown>>(
     { ...node.data } as Record<string, unknown>
   );
@@ -102,7 +122,7 @@ export function NodeConfigPanel({ node, municipios, onUpdate, onClose }: Props) 
     onUpdate(node.id, updated);
   };
 
-  const columns = getColumnsForNode(node, municipios);
+  const columns = getColumnsForNode(node, nodes, edges, municipios);
 
   const renderSourceConfig = () => {
     const d = localData as unknown as SourceNodeData;
