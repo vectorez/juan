@@ -96,3 +96,20 @@
 ### Dependencias actualizadas
 - `drizzle-orm` actualizado de 0.34.1 → 0.45.1
 - `drizzle-kit` actualizado de 0.28.1 → 0.31.9 (compatibilidad)
+
+### Modal de subida en TableStats con preview editable
+- `frontend/src/components/TableStats.tsx` — Botón **"Subir"** en cada card de municipio que abre modal completo:
+  - Select de tipo de datos (Facturación/Recaudos) con opción vacía inicial obligatoria
+  - File picker para CSV/Excel (solo visible tras seleccionar tipo)
+  - Parseo client-side con SheetJS (mismo que tenía FileUploader)
+  - **Tabla preview editable** con botón toggle "Preview/Ocultar":
+    - Edición inline de celdas (clic → Enter/Tab/Escape)
+    - Navegación con Tab entre celdas
+    - Botón eliminar fila por fila
+    - Paginación de 50 filas por página
+    - Modal se expande a `max-w-6xl` cuando preview está abierto
+  - Botón "Subir" envía datos editados a `/api/upload-data`
+  - Muestra resultado de carga con estadísticas
+- `frontend/src/App.tsx` — **Eliminada tab "Subir CSV"**, solo quedan "Ver Datos" y "Municipios"
+- `frontend/src/components/FileUploader.tsx` — **Archivo eliminado** (funcionalidad migrada a TableStats)
+- `TableStats` ahora siempre visible, maneja toda la subida de archivos desde cards de municipio
