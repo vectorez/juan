@@ -261,6 +261,22 @@
   - Confirmación con diálogo mostrando fecha, hora y cantidad de registros antes de eliminar
   - Actualiza automáticamente la lista de importaciones y datos después de eliminar
 
+### Mejoras visuales del modal de datos y tabla estilo Excel
+- `frontend/src/components/TableStats.tsx`:
+  - Modal de "Ver datos" con **tamaño fijo máximo** (`max-w-[95vw]` × `h-[92vh]`), bordes redondeados y sombra
+  - **Header verde** con gradiente (`from-green-600 to-green-700`) estilo Excel/spreadsheet
+  - Ícono `FileSpreadsheet` blanco en el header
+  - Subtítulo "Visor de datos" en verde claro
+  - Botón de cerrar con estilo translúcido sobre fondo verde
+- `frontend/src/components/DataViewer.tsx`:
+  - **Tabla estilo spreadsheet**: headers verdes con gradiente, texto blanco, bordes entre columnas
+  - Filas alternadas (zebra striping) con hover verde claro
+  - Fuente monoespaciada para datos (`font-mono text-xs`)
+  - Headers sticky al hacer scroll
+  - Bordes de celda para aspecto de hoja de cálculo
+  - Botón "Eliminar importación" movido al lado del selector de fecha
+  - Columna `id` oculta del datagrid
+
 ### Eliminación de importaciones específicas
 - `backend/src/db/dynamic-tables.ts`:
   - Nueva función `deleteByImportDate`: elimina todos los registros de una importación específica por timestamp

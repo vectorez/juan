@@ -667,27 +667,28 @@ export function TableStats() {
 
       {/* View Data Modal */}
       {viewModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-xl shadow-xl border border-gray-200 w-full max-w-7xl max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <div className="flex items-center gap-3">
-                <div className="bg-indigo-100 rounded-full p-2">
-                  <Eye className="w-5 h-5 text-indigo-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">
+        <div className="fixed inset-0 z-50 flex flex-col bg-white">
+          <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-green-600 to-green-700 flex-shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="bg-white/20 rounded-lg p-2">
+                <FileSpreadsheet className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">
                   Datos de {viewModal.municipio}
                 </h3>
+                <p className="text-green-100 text-xs">Visor de datos</p>
               </div>
-              <button
-                onClick={() => setViewModal(null)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
             </div>
-            <div className="flex-1 overflow-auto p-6">
-              <DataViewer initialSlug={viewModal.slug} />
-            </div>
+            <button
+              onClick={() => setViewModal(null)}
+              className="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-lg p-1.5 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-hidden p-4">
+            <DataViewer initialSlug={viewModal.slug} />
           </div>
         </div>
       )}

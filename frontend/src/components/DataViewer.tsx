@@ -128,7 +128,7 @@ export function DataViewer({ initialSlug }: DataViewerProps = {}) {
   const columns = data.length > 0 ? Object.keys(data[0]).filter(col => col !== 'fecha_importacion' && col !== 'id') : [];
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-full flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-gray-200 flex flex-wrap items-center gap-3 justify-between">
         <div className="flex items-center gap-3">
@@ -189,6 +189,25 @@ export function DataViewer({ initialSlug }: DataViewerProps = {}) {
                 );
               })}
             </select>
+            {selectedFecha && (
+              <button
+                onClick={handleDeleteImport}
+                disabled={deleting}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+              >
+                {deleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Eliminando...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    Eliminar importación
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
         <p className="text-sm text-gray-500">
@@ -205,25 +224,6 @@ export function DataViewer({ initialSlug }: DataViewerProps = {}) {
             </span>
           )}
         </p>
-        {selectedFecha && (
-          <button
-            onClick={handleDeleteImport}
-            disabled={deleting}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
-          >
-            {deleting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Eliminando...
-              </>
-            ) : (
-              <>
-                <Trash2 className="w-4 h-4" />
-                Eliminar importación
-              </>
-            )}
-          </button>
-        )}
       </div>
 
       {municipiosList.length === 0 && (
@@ -250,14 +250,14 @@ export function DataViewer({ initialSlug }: DataViewerProps = {}) {
 
       {/* Table */}
       {!loading && data.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50">
+        <div className="flex-1 overflow-auto border border-green-200 rounded-lg min-h-0">
+          <table className="w-full text-sm border-collapse">
+            <thead className="sticky top-0 z-10">
+              <tr className="bg-gradient-to-b from-green-600 to-green-700">
                 {columns.map((col) => (
                   <th
                     key={col}
-                    className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap"
+                    className="px-3 py-2.5 text-left text-xs font-bold text-white uppercase whitespace-nowrap border-r border-green-500 last:border-r-0"
                   >
                     {col}
                   </th>
@@ -268,12 +268,14 @@ export function DataViewer({ initialSlug }: DataViewerProps = {}) {
               {data.map((row, i) => (
                 <tr
                   key={i}
-                  className="border-b border-gray-100 hover:bg-gray-50"
+                  className={`border-b border-gray-200 hover:bg-green-50 transition-colors ${
+                    i % 2 === 0 ? "bg-white" : "bg-gray-50/50"
+                  }`}
                 >
                   {columns.map((col) => (
                     <td
                       key={col}
-                      className="px-3 py-2 whitespace-nowrap text-gray-700 max-w-[200px] truncate"
+                      className="px-3 py-1.5 whitespace-nowrap text-gray-700 max-w-[250px] truncate border-r border-gray-100 last:border-r-0 font-mono text-xs"
                     >
                       {String(row[col] ?? "")}
                     </td>
