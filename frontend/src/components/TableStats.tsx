@@ -67,6 +67,7 @@ export function TableStats() {
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [previewPage, setPreviewPage] = useState(0);
   const [editCell, setEditCell] = useState<{ r: number; c: number } | null>(null);
@@ -125,6 +126,7 @@ export function TableStats() {
     setUploadRows([]);
     setUploadResult(null);
     setUploadError(null);
+    setValidationError(null);
     setShowPreview(false);
     setPreviewPage(0);
     setEditCell(null);
@@ -137,6 +139,7 @@ export function TableStats() {
     setUploadRows([]);
     setUploadResult(null);
     setUploadError(null);
+    setValidationError(null);
     setShowPreview(false);
     setEditCell(null);
   };
@@ -167,6 +170,7 @@ export function TableStats() {
     setUploadFile(f);
     setUploadResult(null);
     setUploadError(null);
+    setValidationError(null);
 
     const reader = new FileReader();
     reader.onload = (ev) => {
@@ -183,12 +187,33 @@ export function TableStats() {
           setUploadError("El archivo no tiene datos suficientes.");
           return;
         }
-        setUploadHeaders(json[0].map(String));
-        setUploadRows(json.slice(1).map((r) => r.map(String)));
+        const headers = json[0].map(String);
+        const rows = json.slice(1).map((r) => r.map(String));
+        setUploadHeaders(headers);
+        setUploadRows(rows);
 
         const name = f.name.toLowerCase();
-        if (name.includes("recaudo")) setUploadTableType("recaudos");
-        else setUploadTableType("facturacion");
+        let detectedType: "facturacion" | "recaudos" = "facturacion";
+        if (name.includes("recaudo")) detectedType = "recaudos";
+        setUploadTableType(detectedType);
+
+        // Prevalidación de columnas
+        if (uploadModal) {
+          const municipio = tables.find(t => t.slug === uploadModal.slug);
+          if (municipio) {
+            const expectedHeaders = detectedType === "facturacion" 
+              ? municipio.encabezadosFacturacion 
+              : municipio.encabezadosRecaudos;
+            const expectedCols = expectedHeaders?.length || 0;
+            
+            if (expectedCols > 0 && headers.length !== expectedCols) {
+              setValidationError(
+                `El archivo tiene ${headers.length} columnas pero se esperan ${expectedCols}. ` +
+                `Descarga la plantilla correcta para este municipio.`
+              );
+            }
+          }
+        }
       } catch {
         setUploadError("No se pudo leer el archivo.");
       }
@@ -551,9 +576,36 @@ export function TableStats() {
                     Se subirá a <span className="font-mono font-bold">{uploadModal.slug}_{uploadTableType}</span>
                   </p>
 
+                  {/* Validation error */}
+                  {validationError && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-red-900 mb-2">{validationError}</p>
+                          <button
+                            onClick={() => {
+                              const municipio = tables.find(t => t.slug === uploadModal.slug);
+                              if (municipio) {
+                                const headers = uploadTableType === "facturacion" 
+                                  ? municipio.encabezadosFacturacion 
+                                  : municipio.encabezadosRecaudos;
+                                downloadTemplate(headers, uploadModal.slug, uploadTableType);
+                              }
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded hover:bg-red-700 transition-colors"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            Descargar plantilla correcta
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <button
                     onClick={handleUpload}
-                    disabled={uploading}
+                    disabled={uploading || !!validationError}
                     className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium transition-colors"
                   >
                     {uploading ? (

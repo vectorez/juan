@@ -170,8 +170,15 @@
   - Spinner de carga mientras lee el archivo con SheetJS
   - Validación: no permite crear sin ambos conjuntos de encabezados
   - Envía arrays de encabezados al backend al crear
-- `frontend/src/components/TableStats.tsx` — **Botón descarga de plantilla**:
+- `frontend/src/components/TableStats.tsx` — **Botón descarga de plantilla y prevalidación**:
   - Ícono Download junto a cada tipo de tabla en las cards
   - Genera archivo Excel con una fila de encabezados usando SheetJS
   - Nombre del archivo: `plantilla_{slug}_{tipo}.xlsx`
   - Solo visible si el municipio tiene encabezados configurados
+  - **Prevalidación al seleccionar archivo en modal de subida**:
+    - Al cargar archivo, valida inmediatamente número de columnas contra lo esperado
+    - Si no coincide, muestra alerta roja con ícono de advertencia
+    - Mensaje descriptivo: "El archivo tiene X columnas pero se esperan Y"
+    - Botón "Descargar plantilla correcta" dentro de la alerta para obtener el formato correcto
+    - Botón "Subir" se deshabilita automáticamente si hay error de validación
+    - Evita intentos de subida con archivos incorrectos
