@@ -5,7 +5,7 @@ import path from "path";
 import { db } from "../db/connection.js";
 import { municipios } from "../db/schema.js";
 import { eq, sql } from "drizzle-orm";
-import { insertBatch, getTableCount, getTableData, truncateTable, sanitizeColumnName, getImportDates, ensureFechaImportacion } from "../db/dynamic-tables.js";
+import { insertBatch, getTableCount, getTableData, truncateTable, sanitizeColumnName, getImportDates, ensureFechaImportacion, deleteByImportDate } from "../db/dynamic-tables.js";
 
 const router = Router();
 
@@ -222,6 +222,41 @@ router.delete("/truncate/:slug/:tableType", async (req: Request, res: Response) 
     res.json({ success: true, message: `Tabla ${slug}_${tableType} vaciada correctamente` });
   } catch (error) {
     console.error("Error al vaciar tabla:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+router.delete("/delete-import/:slug/:tableType", async (req: Request, res: Response) => {
+  try {
+    const slug = req.params.slug as string;
+    const tableType = req.params.tableType as string;
+    const fechaImportacion = req.query.fecha as string;
+
+    if (!["facturacion", "recaudos"].includes(tableType)) {
+      res.status(400).json({ error: "tableType debe ser 'facturacion' o 'recaudos'" });
+      return;
+    }
+
+    if (!fechaImportacion) {
+      res.status(400).json({ error: "fecha es requerida" });
+      return;
+    }
+
+    const [municipio] = await db.select().from(municipios).where(eq(municipios.slug, slug));
+    if (!municipio) {
+      res.status(404).json({ error: "Municipio no encontrado" });
+      return;
+    }
+
+    const deleted = await deleteByImportDate(slug, tableType as "facturacion" | "recaudos", fechaImportacion);
+
+    res.json({ 
+      success: true, 
+      message: `${deleted} registros eliminados de la importación`, 
+      deleted 
+    });
+  } catch (error) {
+    console.error("Error al eliminar importación:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });

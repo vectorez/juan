@@ -174,4 +174,18 @@ export async function truncateTable(slug: string, tableType: "facturacion" | "re
   await client.unsafe(`TRUNCATE TABLE "${tableName}" RESTART IDENTITY`);
 }
 
+export async function deleteByImportDate(
+  slug: string,
+  tableType: "facturacion" | "recaudos",
+  fechaImportacion: string
+): Promise<number> {
+  const s = sanitizeSlug(slug);
+  const tableName = `${s}_${tableType}`;
+  const result = await client.unsafe(
+    `DELETE FROM "${tableName}" WHERE fecha_importacion = $1::timestamptz RETURNING id`,
+    [fechaImportacion]
+  );
+  return result.length;
+}
+
 export { sanitizeSlug };

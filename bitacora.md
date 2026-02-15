@@ -257,3 +257,15 @@
   - Indicador visual en el conteo cuando hay filtro activo mostrando fecha y hora
   - Se resetea filtro al cambiar municipio o tipo de tabla
   - **Columna `fecha_importacion` oculta** en la tabla (no se muestra ya que está en el filtro)
+  - **Botón "Eliminar importación"** visible solo cuando hay filtro activo
+  - Confirmación con diálogo mostrando fecha, hora y cantidad de registros antes de eliminar
+  - Actualiza automáticamente la lista de importaciones y datos después de eliminar
+
+### Eliminación de importaciones específicas
+- `backend/src/db/dynamic-tables.ts`:
+  - Nueva función `deleteByImportDate`: elimina todos los registros de una importación específica por timestamp
+  - Retorna el número de registros eliminados
+- `backend/src/routes/upload.ts`:
+  - Nuevo endpoint `DELETE /api/delete-import/:slug/:tableType?fecha=TIMESTAMP`
+  - Elimina todos los registros que tengan el mismo `fecha_importacion`
+  - Permite eliminar importaciones completas de forma selectiva sin afectar otras del mismo día

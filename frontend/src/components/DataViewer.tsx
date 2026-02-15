@@ -6,6 +6,7 @@ import {
   Loader2,
   AlertCircle,
   Calendar,
+  Trash2,
 } from "lucide-react";
 
 interface Municipio {
@@ -40,6 +41,7 @@ export function DataViewer({ initialSlug }: DataViewerProps = {}) {
   const [error, setError] = useState<string | null>(null);
   const [importDates, setImportDates] = useState<ImportDate[]>([]);
   const [selectedFecha, setSelectedFecha] = useState<string>("");
+  const [deleting, setDeleting] = useState(false);
   const pageSize = 25;
 
   useEffect(() => {
@@ -57,12 +59,16 @@ export function DataViewer({ initialSlug }: DataViewerProps = {}) {
       .catch(() => {});
   }, [initialSlug]);
 
-  useEffect(() => {
+  const fetchImportDates = () => {
     if (!selectedSlug) return;
     axios
       .get<{ dates: ImportDate[] }>(`/api/import-dates/${selectedSlug}/${tableType}`)
       .then((res) => setImportDates(res.data.dates))
       .catch(() => setImportDates([]));
+  };
+
+  useEffect(() => {
+    fetchImportDates();
   }, [selectedSlug, tableType]);
 
   useEffect(() => {
@@ -80,6 +86,43 @@ export function DataViewer({ initialSlug }: DataViewerProps = {}) {
       .catch(() => setError("Error al cargar datos. Verifica el backend."))
       .finally(() => setLoading(false));
   }, [selectedSlug, tableType, page, selectedFecha]);
+
+  const handleDeleteImport = async () => {
+    if (!selectedFecha) return;
+    
+    const selectedDate = importDates.find(d => d.fecha === selectedFecha);
+    const fecha = new Date(selectedFecha);
+    const formatoLocal = fecha.toLocaleString('es-CO', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
+    const confirmMsg = `¿Estás seguro de eliminar esta importación?\n\nFecha: ${formatoLocal}\nRegistros: ${selectedDate?.registros || 0}\n\nEsta acción no se puede deshacer.`;
+    
+    if (!window.confirm(confirmMsg)) return;
+    
+    setDeleting(true);
+    try {
+      await axios.delete(`/api/delete-import/${selectedSlug}/${tableType}`, {
+        params: { fecha: selectedFecha }
+      });
+      setSelectedFecha("");
+      setPage(0);
+      fetchImportDates();
+      // Recargar datos
+      const params: Record<string, unknown> = { limit: pageSize, offset: 0 };
+      const res = await axios.get<DataResponse>(`/api/data/${selectedSlug}/${tableType}`, { params });
+      setData(res.data.data);
+      setTotal(res.data.total);
+    } catch (err) {
+      setError("Error al eliminar importación");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const totalPages = Math.ceil(total / pageSize);
   const columns = data.length > 0 ? Object.keys(data[0]).filter(col => col !== 'fecha_importacion') : [];
@@ -131,17 +174,28 @@ export function DataViewer({ initialSlug }: DataViewerProps = {}) {
               <option value="">Todas las importaciones</option>
               {importDates.map((d) => {
                 const fecha = new Date(d.fecha);
-                const formatoLocal = fecha.toLocaleString('es-CO', {
+                const soloFecha = fecha.toLocaleDateString('es-CO', {
                   year: 'numeric',
                   month: '2-digit',
-                  day: '2-digit',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  second: '2-digit'
+                  day: '2-digit'
                 });
+                
+                // Contar cuántas importaciones hay del mismo día
+                const mismaFecha = importDates.filter(item => {
+                  const itemFecha = new Date(item.fecha);
+                  return itemFecha.toLocaleDateString('es-CO') === soloFecha;
+                });
+                
+                // Si hay múltiples del mismo día, agregar índice
+                let label = soloFecha;
+                if (mismaFecha.length > 1) {
+                  const indice = mismaFecha.findIndex(item => item.fecha === d.fecha) + 1;
+                  label = `${soloFecha} - Importación #${indice}`;
+                }
+                
                 return (
                   <option key={d.fecha} value={d.fecha}>
-                    {formatoLocal} ({d.registros.toLocaleString()} reg.)
+                    {label} ({d.registros.toLocaleString()} reg.)
                   </option>
                 );
               })}
@@ -162,6 +216,25 @@ export function DataViewer({ initialSlug }: DataViewerProps = {}) {
             </span>
           )}
         </p>
+        {selectedFecha && (
+          <button
+            onClick={handleDeleteImport}
+            disabled={deleting}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+          >
+            {deleting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Eliminando...
+              </>
+            ) : (
+              <>
+                <Trash2 className="w-4 h-4" />
+                Eliminar importación
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {municipiosList.length === 0 && (
