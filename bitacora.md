@@ -182,3 +182,55 @@
     - Botón "Descargar plantilla correcta" dentro de la alerta para obtener el formato correcto
     - Botón "Subir" se deshabilita automáticamente si hay error de validación
     - Evita intentos de subida con archivos incorrectos
+
+### Módulo Pipeline Visual con React Flow
+- **Librería**: `@xyflow/react v12.10.0` instalada en frontend
+- **Estructura creada**: `frontend/src/components/FlowBuilder/`
+- `types.ts` — Tipos TypeScript: FlowNodeType, datos por nodo, DataRow, NodeResult, SavedPipeline, MunicipioOption
+- **6 nodos personalizados** en `nodes/`:
+  - `SourceNode` (verde) — Fuente de datos: selecciona municipio y tipo de tabla
+  - `FilterNode` (azul) — Filtro: múltiples condiciones con AND/OR, operadores =, !=, >, <, contains, etc.
+  - `AggregateNode` (ámbar) — Agregación: sum, avg, count, min, max con agrupación opcional
+  - `TransformNode` (púrpura) — Transformación: parseNumber, toUpperCase, toLowerCase, trim, concat, substring
+  - `ConditionalNode` (rosa) — Condicional: bifurca flujo en dos salidas (Sí/No)
+  - `OutputNode` (gris) — Salida: muestra resultados en formato tabla, JSON o conteo
+- `engine.ts` — Motor de ejecución del pipeline:
+  - Ordenamiento topológico de nodos
+  - Ejecución secuencial con soporte para bifurcaciones condicionales
+  - Obtención de datos via API (`/api/data/:slug/:tableType`)
+  - Callbacks onNodeStart/onNodeDone para progreso en tiempo real
+- `FlowSidebar.tsx` — Panel lateral con nodos arrastrables (drag & drop)
+- `panels/NodeConfigPanel.tsx` — Panel de configuración dinámico por tipo de nodo
+- `panels/ResultsPanel.tsx` — Panel de resultados expandible con tabla por nodo
+- `FlowBuilder.tsx` — Componente principal:
+  - Canvas React Flow con drag & drop, zoom, pan, minimap, controles
+  - Toolbar con: nombre, Ejecutar, Guardar, Cargar, Limpiar
+  - Lista desplegable de pipelines guardados
+  - Panel de configuración al seleccionar nodo
+  - Panel de resultados al ejecutar
+- **Backend** (`backend/src/db/schema.ts`):
+  - Nueva tabla `pipelines` (id, nombre, descripcion, flow_data JSONB, created_at, updated_at)
+- **Backend** (`backend/src/routes/pipelines.ts`):
+  - `GET /api/pipelines` — Listar pipelines
+  - `GET /api/pipelines/:id` — Obtener pipeline
+  - `POST /api/pipelines` — Crear pipeline
+  - `PUT /api/pipelines/:id` — Actualizar pipeline
+  - `DELETE /api/pipelines/:id` — Eliminar pipeline
+- **Backend** (`backend/src/index.ts`): Registrado pipelinesRouter
+- **Frontend** (`frontend/src/App.tsx`):
+  - Nueva tab "Pipeline" con ícono Workflow
+  - Layout full-width para pipeline, max-w-7xl para municipios
+- Ejecutado `drizzle-kit push` para crear tabla pipelines en PostgreSQL
+- Compilación frontend y backend verificada sin errores
+
+### Nombres reales de columnas en tablas dinámicas
+- `backend/src/db/dynamic-tables.ts`:
+  - Nueva función `sanitizeColumnName`: normaliza nombres de encabezados a nombres SQL válidos (minúsculas, sin acentos, sin caracteres especiales, máx 63 chars)
+  - `createMunicipioTables` ahora recibe arrays de encabezados (`string[]`) en vez de números
+  - Las tablas se crean con los nombres reales sanitizados (ej: `"ciclo"`, `"servicio_suscrito_dependiente"`) en vez de `col_1`, `col_2`
+- `backend/src/routes/municipios.ts`:
+  - POST pasa arrays de encabezados a `createMunicipioTables`
+- `backend/src/routes/upload.ts`:
+  - `mapGenericRow` reemplazada por `mapRowWithHeaders` que usa nombres sanitizados del municipio
+  - Ambos endpoints (`/upload` y `/upload-data`) obtienen encabezados del municipio y los sanitizan para mapear datos
+  - Import de `sanitizeColumnName` desde dynamic-tables

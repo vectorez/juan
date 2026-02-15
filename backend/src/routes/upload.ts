@@ -5,7 +5,7 @@ import path from "path";
 import { db } from "../db/connection.js";
 import { municipios } from "../db/schema.js";
 import { eq, sql } from "drizzle-orm";
-import { insertBatch, getTableCount, getTableData, truncateTable } from "../db/dynamic-tables.js";
+import { insertBatch, getTableCount, getTableData, truncateTable, sanitizeColumnName } from "../db/dynamic-tables.js";
 
 const router = Router();
 
@@ -33,10 +33,11 @@ function parseCsvLine(line: string): string[] {
   return result;
 }
 
-function mapGenericRow(values: string[]): Record<string, unknown> {
+function mapRowWithHeaders(values: string[], columnNames: string[]): Record<string, unknown> {
   const row: Record<string, unknown> = {};
   for (let i = 0; i < values.length; i++) {
-    row[`col_${i + 1}`] = values[i] || null;
+    const colName = i < columnNames.length ? columnNames[i] : `col_${i + 1}`;
+    row[colName] = values[i] || null;
   }
   return row;
 }
@@ -85,6 +86,9 @@ router.post("/upload", upload.single("file"), async (req: Request, res: Response
       return;
     }
 
+    const encabezados: string[] = (tableType === "facturacion" ? municipio.encabezadosFacturacion : municipio.encabezadosRecaudos) || [];
+    const columnNames = encabezados.map((h: string) => sanitizeColumnName(h));
+
     const BATCH_SIZE = 1000;
     let inserted = 0;
     let errors = 0;
@@ -93,7 +97,7 @@ router.post("/upload", upload.single("file"), async (req: Request, res: Response
       const batch = lines.slice(i, i + BATCH_SIZE);
       const rows = batch.map((line) => {
         const values = parseCsvLine(line);
-        return mapGenericRow(values);
+        return mapRowWithHeaders(values, columnNames);
       });
 
       try {
@@ -228,6 +232,9 @@ router.post("/upload-data", async (req: Request, res: Response) => {
       return;
     }
 
+    const encabezados2: string[] = (tableType === "facturacion" ? municipio.encabezadosFacturacion : municipio.encabezadosRecaudos) || [];
+    const columnNames2 = encabezados2.map((h: string) => sanitizeColumnName(h));
+
     const BATCH_SIZE = 1000;
     let inserted = 0;
     let errors = 0;
@@ -235,7 +242,7 @@ router.post("/upload-data", async (req: Request, res: Response) => {
     for (let i = 0; i < csvRows.length; i += BATCH_SIZE) {
       const batch = csvRows.slice(i, i + BATCH_SIZE);
       const mappedRows = batch.map((values: string[]) => {
-        return mapGenericRow(values);
+        return mapRowWithHeaders(values, columnNames2);
       });
 
       try {

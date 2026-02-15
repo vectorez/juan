@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { TableStats } from "./components/TableStats";
 import { MunicipiosManager } from "./components/MunicipiosManager";
-import { Database, MapPin } from "lucide-react";
+import { FlowBuilder } from "./components/FlowBuilder/FlowBuilder";
+import { Database, MapPin, Workflow } from "lucide-react";
 
-type Tab = "municipios";
+type Tab = "municipios" | "pipeline";
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>("municipios");
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: "municipios", label: "Municipios", icon: <MapPin className="w-4 h-4" /> },
+    { key: "pipeline", label: "Pipeline", icon: <Workflow className="w-4 h-4" /> },
   ];
 
   return (
@@ -41,10 +43,14 @@ function App() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <TableStats />
-
-        {activeTab === "municipios" && <MunicipiosManager />}
+      <main className={`mx-auto px-4 py-8 ${activeTab === "pipeline" ? "max-w-full" : "max-w-7xl"}`}>
+        {activeTab === "municipios" && (
+          <>
+            <TableStats />
+            <MunicipiosManager />
+          </>
+        )}
+        {activeTab === "pipeline" && <FlowBuilder />}
       </main>
     </div>
   );

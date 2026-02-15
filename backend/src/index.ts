@@ -6,6 +6,7 @@ import cors from "cors";
 import fs from "fs";
 import uploadRouter from "./routes/upload.js";
 import municipiosRouter from "./routes/municipios.js";
+import pipelinesRouter from "./routes/pipelines.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
@@ -23,6 +24,7 @@ if (!fs.existsSync(uploadsDir)) {
 
 app.use("/api", uploadRouter);
 app.use("/api", municipiosRouter);
+app.use("/api", pipelinesRouter);
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });

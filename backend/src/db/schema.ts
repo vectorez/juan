@@ -5,6 +5,8 @@ import {
   varchar,
   boolean,
   json,
+  text,
+  timestamp,
 } from "drizzle-orm/pg-core";
 
 export const municipios = pgTable("municipios", {
@@ -19,4 +21,13 @@ export const municipios = pgTable("municipios", {
   columnasRecaudos: integer("columnas_recaudos").notNull().default(0),
   encabezadosFacturacion: json("encabezados_facturacion").$type<string[]>().default([]),
   encabezadosRecaudos: json("encabezados_recaudos").$type<string[]>().default([]),
+});
+
+export const pipelines = pgTable("pipelines", {
+  id: serial("id").primaryKey(),
+  nombre: varchar("nombre", { length: 200 }).notNull(),
+  descripcion: text("descripcion").default(""),
+  flowData: json("flow_data").$type<Record<string, unknown>>().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

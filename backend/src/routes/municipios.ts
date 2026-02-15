@@ -73,7 +73,7 @@ router.post("/municipios", async (req: Request, res: Response) => {
       encabezadosRecaudos,
     }).returning();
 
-    await createMunicipioTables(slug, encabezadosFacturacion.length, encabezadosRecaudos.length);
+    await createMunicipioTables(slug, encabezadosFacturacion, encabezadosRecaudos);
 
     res.status(201).json({ data: created });
   } catch (error) {

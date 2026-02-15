@@ -4,11 +4,30 @@ function sanitizeSlug(slug: string): string {
   return slug.replace(/[^a-z0-9_]/g, "");
 }
 
-export async function createMunicipioTables(slug: string, columnasFacturacion: number, columnasRecaudos: number) {
+export function sanitizeColumnName(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9_]/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "")
+    .substring(0, 63) || "col";
+}
+
+export async function createMunicipioTables(
+  slug: string,
+  encabezadosFacturacion: string[],
+  encabezadosRecaudos: string[]
+) {
   const s = sanitizeSlug(slug);
 
-  const colsFacturacion = Array.from({ length: columnasFacturacion }, (_, i) => `col_${i + 1} TEXT`).join(", ");
-  const colsRecaudos = Array.from({ length: columnasRecaudos }, (_, i) => `col_${i + 1} TEXT`).join(", ");
+  const colsFacturacion = encabezadosFacturacion
+    .map((h) => `"${sanitizeColumnName(h)}" TEXT`)
+    .join(", ");
+  const colsRecaudos = encabezadosRecaudos
+    .map((h) => `"${sanitizeColumnName(h)}" TEXT`)
+    .join(", ");
 
   await client.unsafe(`
     CREATE TABLE IF NOT EXISTS "${s}_facturacion" (
