@@ -31,11 +31,12 @@ interface UploadResult {
 
 interface Props {
   onSuccess: () => void;
+  onFileChange?: (hasFile: boolean) => void;
 }
 
 const PREVIEW_PAGE_SIZE = 50;
 
-export function FileUploader({ onSuccess }: Props) {
+export function FileUploader({ onSuccess, onFileChange }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [tableType, setTableType] = useState<"facturacion" | "recaudos">("facturacion");
   const [municipioSlug, setMunicipioSlug] = useState("");
@@ -73,6 +74,7 @@ export function FileUploader({ onSuccess }: Props) {
 
   const parseFile = useCallback((f: File) => {
     setFile(f);
+    onFileChange?.(true);
     setResult(null);
     setError(null);
     setHeaders([]);
@@ -169,6 +171,7 @@ export function FileUploader({ onSuccess }: Props) {
       setEditCell(null);
       setPreviewPage(0);
       setResult(res.data);
+      onFileChange?.(false);
       onSuccess();
     } catch (err: any) {
       setError(err.response?.data?.error || "Error al subir los datos.");
@@ -194,7 +197,7 @@ export function FileUploader({ onSuccess }: Props) {
             No hay municipios creados. Ve a la pestaña "Municipios" para crear uno primero.
           </p>
         </div>
-      ) : (
+      ) : !file && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -414,6 +417,7 @@ export function FileUploader({ onSuccess }: Props) {
                 setRows([]);
                 setResult(null);
                 setError(null);
+                onFileChange?.(false);
               }}
               className="flex items-center gap-1 px-4 py-3 text-gray-600 hover:text-gray-900 transition-colors"
             >

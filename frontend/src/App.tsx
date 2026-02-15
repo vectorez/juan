@@ -10,6 +10,7 @@ type Tab = "upload" | "data" | "municipios";
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>("upload");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isFileLoaded, setIsFileLoaded] = useState(false);
 
   const handleUploadSuccess = () => {
     setRefreshKey((k) => k + 1);
@@ -51,10 +52,10 @@ function App() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <TableStats key={`stats-${refreshKey}`} />
+        {!isFileLoaded && <TableStats key={`stats-${refreshKey}`} />}
 
         {activeTab === "upload" && (
-          <FileUploader onSuccess={handleUploadSuccess} />
+          <FileUploader onSuccess={handleUploadSuccess} onFileChange={setIsFileLoaded} />
         )}
         {activeTab === "data" && <DataViewer />}
         {activeTab === "municipios" && <MunicipiosManager />}
