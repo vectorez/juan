@@ -232,5 +232,8 @@
   - POST pasa arrays de encabezados a `createMunicipioTables`
 - `backend/src/routes/upload.ts`:
   - `mapGenericRow` reemplazada por `mapRowWithHeaders` que usa nombres sanitizados del municipio
+  - **Los encabezados SIEMPRE se obtienen de la BD** (campos `encabezadosFacturacion`/`encabezadosRecaudos` del municipio)
+  - Los headers del CSV se ignoran completamente - solo se usa la primera línea para validar el número de columnas
+  - Garantiza consistencia: los nombres de columna nunca cambian, sin importar qué encabezados tenga el CSV subido
   - Ambos endpoints (`/upload` y `/upload-data`) obtienen encabezados del municipio y los sanitizan para mapear datos
   - Import de `sanitizeColumnName` desde dynamic-tables

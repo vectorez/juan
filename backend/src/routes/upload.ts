@@ -76,18 +76,20 @@ router.post("/upload", upload.single("file"), async (req: Request, res: Response
       return;
     }
 
-    const headers = parseCsvLine(lines[0]);
-    const numCols = headers.length;
+    // Obtener encabezados SIEMPRE de la BD (ignorar headers del CSV)
+    const encabezados: string[] = (tableType === "facturacion" ? municipio.encabezadosFacturacion : municipio.encabezadosRecaudos) || [];
+    const columnNames = encabezados.map((h: string) => sanitizeColumnName(h));
+    const expectedCols = encabezados.length;
 
-    const expectedCols = tableType === "facturacion" ? municipio.columnasFacturacion : municipio.columnasRecaudos;
+    // Validar número de columnas del CSV (solo para verificar estructura)
+    const firstLineCols = parseCsvLine(lines[0]);
+    const numCols = firstLineCols.length;
+    
     if (expectedCols > 0 && numCols !== expectedCols) {
       fs.unlinkSync(req.file.path);
       res.status(400).json({ error: `El archivo tiene ${numCols} columnas pero se esperan ${expectedCols}. Descarga la plantilla para ver el formato correcto.` });
       return;
     }
-
-    const encabezados: string[] = (tableType === "facturacion" ? municipio.encabezadosFacturacion : municipio.encabezadosRecaudos) || [];
-    const columnNames = encabezados.map((h: string) => sanitizeColumnName(h));
 
     const BATCH_SIZE = 1000;
     let inserted = 0;
@@ -224,16 +226,16 @@ router.post("/upload-data", async (req: Request, res: Response) => {
       return;
     }
 
-    const numCols = csvHeaders.length;
+    // Obtener encabezados SIEMPRE de la BD (ignorar headers del frontend)
+    const encabezados: string[] = (tableType === "facturacion" ? municipio.encabezadosFacturacion : municipio.encabezadosRecaudos) || [];
+    const columnNames = encabezados.map((h: string) => sanitizeColumnName(h));
+    const expectedCols = encabezados.length;
 
-    const expectedCols = tableType === "facturacion" ? municipio.columnasFacturacion : municipio.columnasRecaudos;
+    const numCols = csvHeaders.length;
     if (expectedCols > 0 && numCols !== expectedCols) {
       res.status(400).json({ error: `El archivo tiene ${numCols} columnas pero se esperan ${expectedCols}. Descarga la plantilla para ver el formato correcto.` });
       return;
     }
-
-    const encabezados2: string[] = (tableType === "facturacion" ? municipio.encabezadosFacturacion : municipio.encabezadosRecaudos) || [];
-    const columnNames2 = encabezados2.map((h: string) => sanitizeColumnName(h));
 
     const BATCH_SIZE = 1000;
     let inserted = 0;
@@ -242,7 +244,7 @@ router.post("/upload-data", async (req: Request, res: Response) => {
     for (let i = 0; i < csvRows.length; i += BATCH_SIZE) {
       const batch = csvRows.slice(i, i + BATCH_SIZE);
       const mappedRows = batch.map((values: string[]) => {
-        return mapRowWithHeaders(values, columnNames2);
+        return mapRowWithHeaders(values, columnNames);
       });
 
       try {
