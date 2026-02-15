@@ -256,3 +256,4 @@
   - Permite ver hasta 3 o más importaciones del mismo día de forma **independiente**
   - Indicador visual en el conteo cuando hay filtro activo mostrando fecha y hora
   - Se resetea filtro al cambiar municipio o tipo de tabla
+  - **Columna `fecha_importacion` oculta** en la tabla (no se muestra ya que está en el filtro)

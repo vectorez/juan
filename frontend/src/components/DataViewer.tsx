@@ -82,7 +82,7 @@ export function DataViewer({ initialSlug }: DataViewerProps = {}) {
   }, [selectedSlug, tableType, page, selectedFecha]);
 
   const totalPages = Math.ceil(total / pageSize);
-  const columns = data.length > 0 ? Object.keys(data[0]) : [];
+  const columns = data.length > 0 ? Object.keys(data[0]).filter(col => col !== 'fecha_importacion') : [];
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
