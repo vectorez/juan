@@ -125,7 +125,7 @@ export function DataViewer({ initialSlug }: DataViewerProps = {}) {
   };
 
   const totalPages = Math.ceil(total / pageSize);
-  const columns = data.length > 0 ? Object.keys(data[0]).filter(col => col !== 'fecha_importacion') : [];
+  const columns = data.length > 0 ? Object.keys(data[0]).filter(col => col !== 'fecha_importacion' && col !== 'id') : [];
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -174,28 +174,17 @@ export function DataViewer({ initialSlug }: DataViewerProps = {}) {
               <option value="">Todas las importaciones</option>
               {importDates.map((d) => {
                 const fecha = new Date(d.fecha);
-                const soloFecha = fecha.toLocaleDateString('es-CO', {
+                const formatoLocal = fecha.toLocaleString('es-CO', {
                   year: 'numeric',
                   month: '2-digit',
-                  day: '2-digit'
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit'
                 });
-                
-                // Contar cuántas importaciones hay del mismo día
-                const mismaFecha = importDates.filter(item => {
-                  const itemFecha = new Date(item.fecha);
-                  return itemFecha.toLocaleDateString('es-CO') === soloFecha;
-                });
-                
-                // Si hay múltiples del mismo día, agregar índice
-                let label = soloFecha;
-                if (mismaFecha.length > 1) {
-                  const indice = mismaFecha.findIndex(item => item.fecha === d.fecha) + 1;
-                  label = `${soloFecha} - Importación #${indice}`;
-                }
-                
                 return (
                   <option key={d.fecha} value={d.fecha}>
-                    {label} ({d.registros.toLocaleString()} reg.)
+                    {formatoLocal} ({d.registros.toLocaleString()} reg.)
                   </option>
                 );
               })}
