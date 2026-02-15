@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Loader2,
   AlertCircle,
+  Calendar,
 } from "lucide-react";
 
 interface Municipio {
@@ -17,6 +18,11 @@ interface Municipio {
 interface DataResponse {
   data: Record<string, unknown>[];
   total: number;
+}
+
+interface ImportDate {
+  fecha: string;
+  registros: number;
 }
 
 interface DataViewerProps {
@@ -32,6 +38,8 @@ export function DataViewer({ initialSlug }: DataViewerProps = {}) {
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [importDates, setImportDates] = useState<ImportDate[]>([]);
+  const [selectedFecha, setSelectedFecha] = useState<string>("");
   const pageSize = 25;
 
   useEffect(() => {
@@ -51,19 +59,27 @@ export function DataViewer({ initialSlug }: DataViewerProps = {}) {
 
   useEffect(() => {
     if (!selectedSlug) return;
+    axios
+      .get<{ dates: ImportDate[] }>(`/api/import-dates/${selectedSlug}/${tableType}`)
+      .then((res) => setImportDates(res.data.dates))
+      .catch(() => setImportDates([]));
+  }, [selectedSlug, tableType]);
+
+  useEffect(() => {
+    if (!selectedSlug) return;
     setLoading(true);
     setError(null);
+    const params: Record<string, unknown> = { limit: pageSize, offset: page * pageSize };
+    if (selectedFecha) params.fecha = selectedFecha;
     axios
-      .get<DataResponse>(`/api/data/${selectedSlug}/${tableType}`, {
-        params: { limit: pageSize, offset: page * pageSize },
-      })
+      .get<DataResponse>(`/api/data/${selectedSlug}/${tableType}`, { params })
       .then((res) => {
         setData(res.data.data);
         setTotal(res.data.total);
       })
       .catch(() => setError("Error al cargar datos. Verifica el backend."))
       .finally(() => setLoading(false));
-  }, [selectedSlug, tableType, page]);
+  }, [selectedSlug, tableType, page, selectedFecha]);
 
   const totalPages = Math.ceil(total / pageSize);
   const columns = data.length > 0 ? Object.keys(data[0]) : [];
@@ -79,6 +95,7 @@ export function DataViewer({ initialSlug }: DataViewerProps = {}) {
               onChange={(e) => {
                 setSelectedSlug(e.target.value);
                 setPage(0);
+                setSelectedFecha("");
               }}
               className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm font-medium"
             >
@@ -94,15 +111,35 @@ export function DataViewer({ initialSlug }: DataViewerProps = {}) {
             onChange={(e) => {
               setTableType(e.target.value as "facturacion" | "recaudos");
               setPage(0);
+              setSelectedFecha("");
             }}
             className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm font-medium"
           >
             <option value="facturacion">Facturación</option>
             <option value="recaudos">Recaudos</option>
           </select>
+          <div className="flex items-center gap-1.5">
+            <Calendar className="w-4 h-4 text-gray-400" />
+            <select
+              value={selectedFecha}
+              onChange={(e) => {
+                setSelectedFecha(e.target.value);
+                setPage(0);
+              }}
+              className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm font-medium"
+            >
+              <option value="">Todas las importaciones</option>
+              {importDates.map((d) => (
+                <option key={d.fecha} value={d.fecha}>
+                  {d.fecha} ({d.registros.toLocaleString()} reg.)
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         <p className="text-sm text-gray-500">
           <span className="font-mono">{selectedSlug}_{tableType}</span> — {total.toLocaleString()} registros
+          {selectedFecha && <span className="ml-1 text-indigo-600">(filtrado: {selectedFecha})</span>}
         </p>
       </div>
 

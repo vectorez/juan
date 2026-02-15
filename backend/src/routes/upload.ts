@@ -5,7 +5,7 @@ import path from "path";
 import { db } from "../db/connection.js";
 import { municipios } from "../db/schema.js";
 import { eq, sql } from "drizzle-orm";
-import { insertBatch, getTableCount, getTableData, truncateTable, sanitizeColumnName } from "../db/dynamic-tables.js";
+import { insertBatch, getTableCount, getTableData, truncateTable, sanitizeColumnName, getImportDates, ensureFechaImportacion } from "../db/dynamic-tables.js";
 
 const router = Router();
 
@@ -91,15 +91,22 @@ router.post("/upload", upload.single("file"), async (req: Request, res: Response
       return;
     }
 
+    // Migrar tabla existente si no tiene columna fecha_importacion
+    await ensureFechaImportacion(municipioSlug, tableType as "facturacion" | "recaudos");
+
     const BATCH_SIZE = 1000;
     let inserted = 0;
     let errors = 0;
+
+    const fechaImportacion = new Date().toISOString();
 
     for (let i = 1; i < lines.length; i += BATCH_SIZE) {
       const batch = lines.slice(i, i + BATCH_SIZE);
       const rows = batch.map((line) => {
         const values = parseCsvLine(line);
-        return mapRowWithHeaders(values, columnNames);
+        const row = mapRowWithHeaders(values, columnNames);
+        row.fecha_importacion = fechaImportacion;
+        return row;
       });
 
       try {
@@ -156,6 +163,7 @@ router.get("/data/:slug/:tableType", async (req: Request, res: Response) => {
     const { slug, tableType } = req.params;
     const limit = parseInt(req.query.limit as string) || 50;
     const offset = parseInt(req.query.offset as string) || 0;
+    const fechaImportacion = req.query.fecha as string | undefined;
 
     if (!tableType || !["facturacion", "recaudos"].includes(tableType as string)) {
       res.status(400).json({ error: "tableType debe ser 'facturacion' o 'recaudos'" });
@@ -168,10 +176,27 @@ router.get("/data/:slug/:tableType", async (req: Request, res: Response) => {
       return;
     }
 
-    const result = await getTableData(slug as string, tableType as "facturacion" | "recaudos", limit, offset);
+    const result = await getTableData(slug as string, tableType as "facturacion" | "recaudos", limit, offset, fechaImportacion);
     res.json(result);
   } catch (error) {
     console.error("Error al obtener datos:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+router.get("/import-dates/:slug/:tableType", async (req: Request, res: Response) => {
+  try {
+    const { slug, tableType } = req.params;
+
+    if (!tableType || !["facturacion", "recaudos"].includes(tableType as string)) {
+      res.status(400).json({ error: "tableType debe ser 'facturacion' o 'recaudos'" });
+      return;
+    }
+
+    const dates = await getImportDates(slug as string, tableType as "facturacion" | "recaudos");
+    res.json({ dates });
+  } catch (error) {
+    console.error("Error al obtener fechas de importación:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
@@ -237,14 +262,21 @@ router.post("/upload-data", async (req: Request, res: Response) => {
       return;
     }
 
+    // Migrar tabla existente si no tiene columna fecha_importacion
+    await ensureFechaImportacion(municipioSlug, tableType as "facturacion" | "recaudos");
+
     const BATCH_SIZE = 1000;
     let inserted = 0;
     let errors = 0;
 
+    const fechaImportacion = new Date().toISOString();
+
     for (let i = 0; i < csvRows.length; i += BATCH_SIZE) {
       const batch = csvRows.slice(i, i + BATCH_SIZE);
       const mappedRows = batch.map((values: string[]) => {
-        return mapRowWithHeaders(values, columnNames);
+        const row = mapRowWithHeaders(values, columnNames);
+        row.fecha_importacion = fechaImportacion;
+        return row;
       });
 
       try {

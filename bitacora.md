@@ -237,3 +237,20 @@
   - Garantiza consistencia: los nombres de columna nunca cambian, sin importar qué encabezados tenga el CSV subido
   - Ambos endpoints (`/upload` y `/upload-data`) obtienen encabezados del municipio y los sanitizan para mapear datos
   - Import de `sanitizeColumnName` desde dynamic-tables
+
+### Campo fecha_importacion en tablas dinámicas
+- `backend/src/db/dynamic-tables.ts`:
+  - Columna `fecha_importacion TIMESTAMPTZ NOT NULL DEFAULT NOW()` agregada a tablas `_facturacion` y `_recaudos`
+  - Nueva función `ensureFechaImportacion`: migra tablas existentes agregando la columna si no existe
+  - Nueva función `getImportDates`: retorna fechas únicas de importación con conteo de registros
+  - `getTableData` ahora acepta parámetro opcional `fechaImportacion` para filtrar por fecha
+- `backend/src/routes/upload.ts`:
+  - Ambos endpoints (`/upload` y `/upload-data`) asignan `fecha_importacion` con timestamp del momento de importación
+  - Llaman `ensureFechaImportacion` antes de insertar para migrar tablas existentes
+  - Nuevo endpoint `GET /api/import-dates/:slug/:tableType` retorna fechas de importación disponibles
+  - Endpoint `GET /api/data/:slug/:tableType` acepta query param `?fecha=YYYY-MM-DD` para filtrar
+- `frontend/src/components/DataViewer.tsx`:
+  - Nuevo selector con ícono Calendar para filtrar por fecha de importación
+  - Opciones: "Todas las importaciones" + cada fecha con conteo de registros
+  - Indicador visual en el conteo cuando hay filtro activo
+  - Se resetea filtro al cambiar municipio o tipo de tabla
