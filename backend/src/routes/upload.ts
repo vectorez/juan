@@ -3,8 +3,9 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 import { db } from "../db/connection.js";
-import { apApartado, apApartadoRecaudos } from "../db/schema.js";
-import { sql } from "drizzle-orm";
+import { municipios } from "../db/schema.js";
+import { eq, sql } from "drizzle-orm";
+import { insertBatch, getTableCount, getTableData } from "../db/dynamic-tables.js";
 
 const router = Router();
 
@@ -43,37 +44,37 @@ function parseDecimal(val: string): string | null {
   return val.replace(",", ".");
 }
 
-function mapApartadoRow(values: string[], headers: string[]) {
+function mapFacturacionRow(values: string[], headers: string[]) {
   const get = (name: string) => {
     const idx = headers.indexOf(name);
     return idx >= 0 ? values[idx] : "";
   };
   return {
     ciclo: parseNumber(get("Ciclo")),
-    servicioSuscritoDependiente: parseNumber(get("ServicioSuscritoDependiente")),
-    servicioSuscritoPadre: parseNumber(get("ServicioSuscritoPadre")),
-    tipoServicio: parseNumber(get("TipoServicio")),
-    descripcionServicio: get("DescripcionServicio") || null,
+    servicio_suscrito_dependiente: parseNumber(get("ServicioSuscritoDependiente")),
+    servicio_suscrito_padre: parseNumber(get("ServicioSuscritoPadre")),
+    tipo_servicio: parseNumber(get("TipoServicio")),
+    descripcion_servicio: get("DescripcionServicio") || null,
     suscripcion: parseNumber(get("Suscripcion")),
-    fechaGeneracionFactura: get("FechaGeneracionFactura") || null,
-    anoMesFactura: parseNumber(get("AnoMesFactura")),
-    nroFactura: parseNumber(get("NroFactura")),
+    fecha_generacion_factura: get("FechaGeneracionFactura") || null,
+    ano_mes_factura: parseNumber(get("AnoMesFactura")),
+    nro_factura: parseNumber(get("NroFactura")),
     categoria: parseNumber(get("Categoria")),
-    subCategoria: parseNumber(get("SubCategoria")),
-    valorImpuesto: parseDecimal(get("ValorImpuesto")),
-    valorCartera: parseDecimal(get("ValorCartera")),
-    interesesMora: parseDecimal(get("InteresesMora")),
-    valorReconocimiento: parseDecimal(get("ValorReconocimiento")),
-    valorSeparacion: parseDecimal(get("ValorSeparacion")),
-    valorFinanciacion: parseDecimal(get("ValorFinanciacion")),
-    valorTotalFacturado: parseDecimal(get("ValorTotalFacturado")),
+    sub_categoria: parseNumber(get("SubCategoria")),
+    valor_impuesto: parseDecimal(get("ValorImpuesto")),
+    valor_cartera: parseDecimal(get("ValorCartera")),
+    intereses_mora: parseDecimal(get("InteresesMora")),
+    valor_reconocimiento: parseDecimal(get("ValorReconocimiento")),
+    valor_separacion: parseDecimal(get("ValorSeparacion")),
+    valor_financiacion: parseDecimal(get("ValorFinanciacion")),
+    valor_total_facturado: parseDecimal(get("ValorTotalFacturado")),
     direccion: get("Direccion") || null,
-    nroInstalacion: get("NroInstalacion") || null,
-    sujetoPasivoPdtoDependiente: get("SujetoPasivoPdtoDependiente") || null,
-    identificacionSujetoPasivo: get("IdentificacionSujetoPasivo") || null,
-    codDepartamento: parseNumber(get("CodDepartamento")),
-    codMunicipio: parseNumber(get("CodMunicipio")),
-    consumoEnergia: parseDecimal(get("ConsumoEnergia")),
+    nro_instalacion: get("NroInstalacion") || null,
+    sujeto_pasivo_pdto_dependiente: get("SujetoPasivoPdtoDependiente") || null,
+    identificacion_sujeto_pasivo: get("IdentificacionSujetoPasivo") || null,
+    cod_departamento: parseNumber(get("CodDepartamento")),
+    cod_municipio: parseNumber(get("CodMunicipio")),
+    consumo_energia: parseDecimal(get("ConsumoEnergia")),
   };
 }
 
@@ -83,37 +84,50 @@ function mapRecaudosRow(values: string[], headers: string[]) {
     return idx >= 0 ? values[idx] : "";
   };
   return {
-    servicioSuscritoDependiente: parseNumber(get("ServicioSuscritoDependiente")),
-    servicioSuscritoPadre: parseNumber(get("ServicioSuscritoPadre")),
-    tipoServicio: parseNumber(get("TipoServicio")),
-    descripcionServicio: get("DescripcionServicio") || null,
+    servicio_suscrito_dependiente: parseNumber(get("ServicioSuscritoDependiente")),
+    servicio_suscrito_padre: parseNumber(get("ServicioSuscritoPadre")),
+    tipo_servicio: parseNumber(get("TipoServicio")),
+    descripcion_servicio: get("DescripcionServicio") || null,
     suscripcion: parseNumber(get("Suscripcion")),
-    anoMesFactura: parseNumber(get("AnoMesFactura")),
-    nroFactura: parseNumber(get("NroFactura")),
+    ano_mes_factura: parseNumber(get("AnoMesFactura")),
+    nro_factura: parseNumber(get("NroFactura")),
     categoria: parseNumber(get("Categoria")),
-    subCategoria: parseNumber(get("SubCategoria")),
-    valorRecaudoImpuesto: parseDecimal(get("ValorRecaudoImpuesto")),
-    valorRecaudoIntereses: parseDecimal(get("ValorRecaudoIntereses")),
-    valorRecaudoSeparacion: parseDecimal(get("ValorRecaudoSeparacion")),
-    valorReconocimiento: parseDecimal(get("ValorReconocimiento")),
-    valorOtrosRecaudos: parseDecimal(get("ValorOtrosRecaudos")),
-    valorTotalRecaudos: parseDecimal(get("ValorTotalRecaudos")),
-    fechaPago: get("FechaPago") || null,
+    sub_categoria: parseNumber(get("SubCategoria")),
+    valor_recaudo_impuesto: parseDecimal(get("ValorRecaudoImpuesto")),
+    valor_recaudo_intereses: parseDecimal(get("ValorRecaudoIntereses")),
+    valor_recaudo_separacion: parseDecimal(get("ValorRecaudoSeparacion")),
+    valor_reconocimiento: parseDecimal(get("ValorReconocimiento")),
+    valor_otros_recaudos: parseDecimal(get("ValorOtrosRecaudos")),
+    valor_total_recaudos: parseDecimal(get("ValorTotalRecaudos")),
+    fecha_pago: get("FechaPago") || null,
     direccion: get("Direccion") || null,
-    nroInstalacion: get("NroInstalacion") || null,
-    sujetoPasivoPdtoDependiente: get("SujetoPasivoPdtoDependiente") || null,
-    identificacionSujetoPasivo: get("IdentificacionSujetoPasivo") || null,
-    codDepartamento: parseNumber(get("CodDepartamento")),
-    codMunicipio: parseNumber(get("CodMunicipio")),
-    valorReconocimientoCovid: parseDecimal(get("ValorReconocimientoCOVID")),
+    nro_instalacion: get("NroInstalacion") || null,
+    sujeto_pasivo_pdto_dependiente: get("SujetoPasivoPdtoDependiente") || null,
+    identificacion_sujeto_pasivo: get("IdentificacionSujetoPasivo") || null,
+    cod_departamento: parseNumber(get("CodDepartamento")),
+    cod_municipio: parseNumber(get("CodMunicipio")),
+    valor_reconocimiento_covid: parseDecimal(get("ValorReconocimientoCOVID")),
   };
 }
 
 router.post("/upload", upload.single("file"), async (req: Request, res: Response) => {
   try {
     const tableType = req.body?.tableType as string;
-    if (!tableType || !["apartado", "recaudos"].includes(tableType)) {
-      res.status(400).json({ error: "tableType debe ser 'apartado' o 'recaudos'" });
+    const municipioSlug = req.body?.municipioSlug as string;
+
+    if (!tableType || !["facturacion", "recaudos"].includes(tableType)) {
+      res.status(400).json({ error: "tableType debe ser 'facturacion' o 'recaudos'" });
+      return;
+    }
+
+    if (!municipioSlug) {
+      res.status(400).json({ error: "municipioSlug es requerido" });
+      return;
+    }
+
+    const [municipio] = await db.select().from(municipios).where(eq(municipios.slug, municipioSlug));
+    if (!municipio) {
+      res.status(400).json({ error: "Municipio no encontrado" });
       return;
     }
 
@@ -139,17 +153,13 @@ router.post("/upload", upload.single("file"), async (req: Request, res: Response
       const batch = lines.slice(i, i + BATCH_SIZE);
       const rows = batch.map((line) => {
         const values = parseCsvLine(line);
-        return tableType === "apartado"
-          ? mapApartadoRow(values, headers)
+        return tableType === "facturacion"
+          ? mapFacturacionRow(values, headers)
           : mapRecaudosRow(values, headers);
       });
 
       try {
-        if (tableType === "apartado") {
-          await db.insert(apApartado).values(rows as any[]);
-        } else {
-          await db.insert(apApartadoRecaudos).values(rows as any[]);
-        }
+        await insertBatch(municipioSlug, tableType as "facturacion" | "recaudos", rows);
         inserted += rows.length;
       } catch (err) {
         console.error(`Error en lote ${Math.floor(i / BATCH_SIZE)}:`, err);
@@ -161,7 +171,7 @@ router.post("/upload", upload.single("file"), async (req: Request, res: Response
 
     res.json({
       success: true,
-      table: tableType === "apartado" ? "ap_apartado" : "ap_apartado_recaudos",
+      table: `${municipioSlug}_${tableType}`,
       totalRows: lines.length - 1,
       inserted,
       errors,
@@ -174,42 +184,46 @@ router.post("/upload", upload.single("file"), async (req: Request, res: Response
 
 router.get("/tables", async (_req: Request, res: Response) => {
   try {
-    const [apartadoCount] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(apApartado);
-    const [recaudosCount] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(apApartadoRecaudos);
+    const allMunicipios = await db.select().from(municipios);
+    const tables = [];
 
-    res.json({
-      tables: [
-        { name: "ap_apartado", count: apartadoCount.count },
-        { name: "ap_apartado_recaudos", count: recaudosCount.count },
-      ],
-    });
+    for (const m of allMunicipios) {
+      const facCount = await getTableCount(m.slug, "facturacion");
+      const recCount = await getTableCount(m.slug, "recaudos");
+      tables.push({
+        municipio: m.nombreMunicipio,
+        slug: m.slug,
+        facturacion: facCount,
+        recaudos: recCount,
+      });
+    }
+
+    res.json({ tables, totalMunicipios: allMunicipios.length });
   } catch (error) {
     console.error("Error al obtener tablas:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
 
-router.get("/data/:table", async (req: Request, res: Response) => {
+router.get("/data/:slug/:tableType", async (req: Request, res: Response) => {
   try {
-    const { table } = req.params;
+    const { slug, tableType } = req.params;
     const limit = parseInt(req.query.limit as string) || 50;
     const offset = parseInt(req.query.offset as string) || 0;
 
-    if (table === "ap_apartado") {
-      const data = await db.select().from(apApartado).limit(limit).offset(offset);
-      const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(apApartado);
-      res.json({ data, total: count });
-    } else if (table === "ap_apartado_recaudos") {
-      const data = await db.select().from(apApartadoRecaudos).limit(limit).offset(offset);
-      const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(apApartadoRecaudos);
-      res.json({ data, total: count });
-    } else {
-      res.status(400).json({ error: "Tabla no válida" });
+    if (!tableType || !["facturacion", "recaudos"].includes(tableType as string)) {
+      res.status(400).json({ error: "tableType debe ser 'facturacion' o 'recaudos'" });
+      return;
     }
+
+    const [municipio] = await db.select().from(municipios).where(eq(municipios.slug, slug as string));
+    if (!municipio) {
+      res.status(400).json({ error: "Municipio no encontrado" });
+      return;
+    }
+
+    const result = await getTableData(slug as string, tableType as "facturacion" | "recaudos", limit, offset);
+    res.json(result);
   } catch (error) {
     console.error("Error al obtener datos:", error);
     res.status(500).json({ error: "Error interno del servidor" });

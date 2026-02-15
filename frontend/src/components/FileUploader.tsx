@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import axios from "axios";
 import {
   Upload,
@@ -8,6 +8,13 @@ import {
   Loader2,
   Eye,
 } from "lucide-react";
+
+interface Municipio {
+  id: number;
+  slug: string;
+  nombreMunicipio: string;
+  nombreDepartamento: string;
+}
 
 interface ColumnInfo {
   name: string;
@@ -39,9 +46,9 @@ interface Props {
 
 export function FileUploader({ onSuccess }: Props) {
   const [file, setFile] = useState<File | null>(null);
-  const [tableType, setTableType] = useState<"apartado" | "recaudos">(
-    "apartado"
-  );
+  const [tableType, setTableType] = useState<"facturacion" | "recaudos">("facturacion");
+  const [municipioSlug, setMunicipioSlug] = useState("");
+  const [municipiosList, setMunicipiosList] = useState<Municipio[]>([]);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [uploading, setUploading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
@@ -50,6 +57,18 @@ export function FileUploader({ onSuccess }: Props) {
   const [progress, setProgress] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    axios
+      .get<{ data: Municipio[] }>("/api/municipios")
+      .then((res) => {
+        setMunicipiosList(res.data.data);
+        if (res.data.data.length > 0 && !municipioSlug) {
+          setMunicipioSlug(res.data.data[0].slug);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -86,7 +105,7 @@ export function FileUploader({ onSuccess }: Props) {
       if (name.includes("recaudo")) {
         setTableType("recaudos");
       } else {
-        setTableType("apartado");
+        setTableType("facturacion");
       }
     } catch (err) {
       setError("Error al analizar el archivo. Verifica que el servicio Python esté corriendo.");
@@ -97,6 +116,10 @@ export function FileUploader({ onSuccess }: Props) {
 
   const uploadFile = async () => {
     if (!file) return;
+    if (!municipioSlug) {
+      setError("Debes seleccionar un municipio antes de subir");
+      return;
+    }
     setUploading(true);
     setError(null);
     setProgress(0);
@@ -104,6 +127,7 @@ export function FileUploader({ onSuccess }: Props) {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("tableType", tableType);
+      formData.append("municipioSlug", municipioSlug);
 
       const res = await axios.post<UploadResult>("/api/upload", formData, {
         onUploadProgress: (e) => {
@@ -125,28 +149,74 @@ export function FileUploader({ onSuccess }: Props) {
 
   return (
     <div className="space-y-6">
+      {/* Municipio Selector */}
+      {municipiosList.length === 0 ? (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center gap-2">
+          <AlertCircle className="w-5 h-5 text-amber-600" />
+          <p className="text-sm text-amber-700">
+            No hay municipios creados. Ve a la pestaña "Municipios" para crear uno primero.
+          </p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Municipio destino
+              </label>
+              <select
+                value={municipioSlug}
+                onChange={(e) => setMunicipioSlug(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+              >
+                {municipiosList.map((m) => (
+                  <option key={m.slug} value={m.slug}>
+                    {m.nombreMunicipio} ({m.nombreDepartamento})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tipo de datos
+              </label>
+              <select
+                value={tableType}
+                onChange={(e) => setTableType(e.target.value as "facturacion" | "recaudos")}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="facturacion">Facturación</option>
+                <option value="recaudos">Recaudos</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Drop Zone */}
-      <div
-        onDrop={handleDrop}
-        onDragOver={(e) => e.preventDefault()}
-        onClick={() => inputRef.current?.click()}
-        className="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/50 transition-colors"
-      >
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".csv"
-          onChange={handleFileSelect}
-          className="hidden"
-        />
-        <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-        <p className="text-lg font-medium text-gray-700">
-          Arrastra un archivo CSV aquí o haz clic para seleccionar
-        </p>
-        <p className="text-sm text-gray-500 mt-2">
-          Soporta AP_APARTADO y AP_APARTADO_Recaudos
-        </p>
-      </div>
+      {municipiosList.length > 0 && (
+        <div
+          onDrop={handleDrop}
+          onDragOver={(e) => e.preventDefault()}
+          onClick={() => inputRef.current?.click()}
+          className="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/50 transition-colors"
+        >
+          <input
+            ref={inputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-lg font-medium text-gray-700">
+            Arrastra un archivo CSV aquí o haz clic para seleccionar
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            Se cargará en <span className="font-mono font-bold">{municipioSlug}_{tableType}</span>
+          </p>
+        </div>
+      )}
 
       {/* File Selected */}
       {file && (
@@ -180,7 +250,7 @@ export function FileUploader({ onSuccess }: Props) {
           {/* Analysis Results */}
           {analysis && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="bg-gray-50 rounded-lg p-3">
                   <p className="text-xs text-gray-500 uppercase">Filas</p>
                   <p className="text-xl font-bold text-gray-900">
@@ -198,19 +268,6 @@ export function FileUploader({ onSuccess }: Props) {
                   <p className="text-xl font-bold text-gray-900">
                     {analysis.encoding}
                   </p>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-xs text-gray-500 uppercase">Tabla destino</p>
-                  <select
-                    value={tableType}
-                    onChange={(e) =>
-                      setTableType(e.target.value as "apartado" | "recaudos")
-                    }
-                    className="mt-1 w-full rounded-md border-gray-300 bg-white px-2 py-1 text-sm font-bold text-gray-900"
-                  >
-                    <option value="apartado">ap_apartado</option>
-                    <option value="recaudos">ap_apartado_recaudos</option>
-                  </select>
                 </div>
               </div>
 
@@ -256,7 +313,7 @@ export function FileUploader({ onSuccess }: Props) {
               <div className="flex items-center gap-4">
                 <button
                   onClick={uploadFile}
-                  disabled={uploading}
+                  disabled={uploading || !municipioSlug}
                   className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium transition-colors"
                 >
                   {uploading ? (
@@ -266,7 +323,7 @@ export function FileUploader({ onSuccess }: Props) {
                   )}
                   {uploading
                     ? `Subiendo... ${progress}%`
-                    : "Subir a PostgreSQL"}
+                    : `Subir a ${municipioSlug}_${tableType}`}
                 </button>
               </div>
 

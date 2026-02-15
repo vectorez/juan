@@ -7,13 +7,22 @@ import {
   AlertCircle,
 } from "lucide-react";
 
+interface Municipio {
+  id: number;
+  slug: string;
+  nombreMunicipio: string;
+  nombreDepartamento: string;
+}
+
 interface DataResponse {
   data: Record<string, unknown>[];
   total: number;
 }
 
 export function DataViewer() {
-  const [table, setTable] = useState("ap_apartado");
+  const [municipiosList, setMunicipiosList] = useState<Municipio[]>([]);
+  const [selectedSlug, setSelectedSlug] = useState("");
+  const [tableType, setTableType] = useState<"facturacion" | "recaudos">("facturacion");
   const [data, setData] = useState<Record<string, unknown>[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
@@ -22,10 +31,23 @@ export function DataViewer() {
   const pageSize = 25;
 
   useEffect(() => {
+    axios
+      .get<{ data: Municipio[] }>("/api/municipios")
+      .then((res) => {
+        setMunicipiosList(res.data.data);
+        if (res.data.data.length > 0 && !selectedSlug) {
+          setSelectedSlug(res.data.data[0].slug);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!selectedSlug) return;
     setLoading(true);
     setError(null);
     axios
-      .get<DataResponse>(`/api/data/${table}`, {
+      .get<DataResponse>(`/api/data/${selectedSlug}/${tableType}`, {
         params: { limit: pageSize, offset: page * pageSize },
       })
       .then((res) => {
@@ -34,7 +56,7 @@ export function DataViewer() {
       })
       .catch(() => setError("Error al cargar datos. Verifica el backend."))
       .finally(() => setLoading(false));
-  }, [table, page]);
+  }, [selectedSlug, tableType, page]);
 
   const totalPages = Math.ceil(total / pageSize);
   const columns = data.length > 0 ? Object.keys(data[0]) : [];
@@ -42,22 +64,44 @@ export function DataViewer() {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        <select
-          value={table}
-          onChange={(e) => {
-            setTable(e.target.value);
-            setPage(0);
-          }}
-          className="rounded-lg border-gray-300 bg-gray-50 px-3 py-2 text-sm font-medium"
-        >
-          <option value="ap_apartado">ap_apartado</option>
-          <option value="ap_apartado_recaudos">ap_apartado_recaudos</option>
-        </select>
+      <div className="p-4 border-b border-gray-200 flex flex-wrap items-center gap-3 justify-between">
+        <div className="flex items-center gap-3">
+          <select
+            value={selectedSlug}
+            onChange={(e) => {
+              setSelectedSlug(e.target.value);
+              setPage(0);
+            }}
+            className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm font-medium"
+          >
+            {municipiosList.map((m) => (
+              <option key={m.slug} value={m.slug}>
+                {m.nombreMunicipio}
+              </option>
+            ))}
+          </select>
+          <select
+            value={tableType}
+            onChange={(e) => {
+              setTableType(e.target.value as "facturacion" | "recaudos");
+              setPage(0);
+            }}
+            className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm font-medium"
+          >
+            <option value="facturacion">Facturación</option>
+            <option value="recaudos">Recaudos</option>
+          </select>
+        </div>
         <p className="text-sm text-gray-500">
-          {total.toLocaleString()} registros totales
+          <span className="font-mono">{selectedSlug}_{tableType}</span> — {total.toLocaleString()} registros
         </p>
       </div>
+
+      {municipiosList.length === 0 && (
+        <div className="p-8 text-center text-gray-500">
+          No hay municipios creados. Crea uno primero en la pestaña "Municipios".
+        </div>
+      )}
 
       {/* Error */}
       {error && (
@@ -112,7 +156,7 @@ export function DataViewer() {
         </div>
       )}
 
-      {!loading && data.length === 0 && !error && (
+      {!loading && data.length === 0 && !error && selectedSlug && (
         <div className="p-8 text-center text-gray-500">
           No hay datos en esta tabla. Sube un archivo CSV primero.
         </div>

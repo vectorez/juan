@@ -2,9 +2,10 @@ import { useState } from "react";
 import { FileUploader } from "./components/FileUploader";
 import { DataViewer } from "./components/DataViewer";
 import { TableStats } from "./components/TableStats";
-import { Database, Upload, Table } from "lucide-react";
+import { MunicipiosManager } from "./components/MunicipiosManager";
+import { Database, Upload, Table, MapPin } from "lucide-react";
 
-type Tab = "upload" | "data";
+type Tab = "upload" | "data" | "municipios";
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>("upload");
@@ -13,6 +14,12 @@ function App() {
   const handleUploadSuccess = () => {
     setRefreshKey((k) => k + 1);
   };
+
+  const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
+    { key: "upload", label: "Subir CSV", icon: <Upload className="w-4 h-4" /> },
+    { key: "data", label: "Ver Datos", icon: <Table className="w-4 h-4" /> },
+    { key: "municipios", label: "Municipios", icon: <MapPin className="w-4 h-4" /> },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -25,28 +32,20 @@ function App() {
             </h1>
           </div>
           <nav className="flex gap-2">
-            <button
-              onClick={() => setActiveTab("upload")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                activeTab === "upload"
-                  ? "bg-indigo-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              <Upload className="w-4 h-4" />
-              Subir CSV
-            </button>
-            <button
-              onClick={() => setActiveTab("data")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                activeTab === "data"
-                  ? "bg-indigo-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              <Table className="w-4 h-4" />
-              Ver Datos
-            </button>
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                  activeTab === tab.key
+                    ? "bg-indigo-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
           </nav>
         </div>
       </header>
@@ -58,6 +57,7 @@ function App() {
           <FileUploader onSuccess={handleUploadSuccess} />
         )}
         {activeTab === "data" && <DataViewer />}
+        {activeTab === "municipios" && <MunicipiosManager />}
       </main>
     </div>
   );
