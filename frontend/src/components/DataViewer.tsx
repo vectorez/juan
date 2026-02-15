@@ -82,7 +82,7 @@ export function DataViewer({ initialSlug }: DataViewerProps = {}) {
   }, [selectedSlug, tableType, page, selectedFecha]);
 
   const totalPages = Math.ceil(total / pageSize);
-  const columns = data.length > 0 ? Object.keys(data[0]).filter(col => col !== 'fecha_importacion' && col !== 'id') : [];
+  const columns = data.length > 0 ? Object.keys(data[0]).filter(col => col !== 'fecha_importacion') : [];
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -131,10 +131,13 @@ export function DataViewer({ initialSlug }: DataViewerProps = {}) {
               <option value="">Todas las importaciones</option>
               {importDates.map((d) => {
                 const fecha = new Date(d.fecha);
-                const formatoLocal = fecha.toLocaleDateString('es-CO', {
+                const formatoLocal = fecha.toLocaleString('es-CO', {
                   year: 'numeric',
                   month: '2-digit',
-                  day: '2-digit'
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit'
                 });
                 return (
                   <option key={d.fecha} value={d.fecha}>
@@ -149,10 +152,12 @@ export function DataViewer({ initialSlug }: DataViewerProps = {}) {
           <span className="font-mono">{selectedSlug}_{tableType}</span> — {total.toLocaleString()} registros
           {selectedFecha && (
             <span className="ml-1 text-indigo-600">
-              (filtrado: {new Date(selectedFecha).toLocaleDateString('es-CO', {
+              (filtrado: {new Date(selectedFecha).toLocaleString('es-CO', {
                 year: 'numeric',
                 month: '2-digit',
-                day: '2-digit'
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
               })})
             </span>
           )}
