@@ -71,6 +71,28 @@
 - `frontend/src/components/DataViewer.tsx` — Filtro por municipio + tipo de tabla
 - `frontend/src/components/TableStats.tsx` — Cards con conteo facturación/recaudos por municipio
 
+### Preview editable con SheetJS (xlsx)
+- Instalado `xlsx` (SheetJS) en el frontend vía `pnpm add xlsx`
+- `frontend/src/components/FileUploader.tsx` — **Reescrito completamente**:
+  - Parseo client-side con `XLSX.read()` (soporta CSV y Excel, codepage latin1)
+  - Tabla editable inline: clic en celda para editar, Enter/Tab para confirmar, Escape para cancelar
+  - Navegación con Tab entre celdas
+  - Botón eliminar fila por fila (ícono Trash2)
+  - Paginación de vista previa (50 filas por página)
+  - Botón "Limpiar" para resetear
+  - Soporta archivos `.csv`, `.xlsx`, `.xls`
+  - Ya no requiere servicio Python para analizar — parseo 100% en el navegador
+- `backend/src/routes/upload.ts` — Nuevo endpoint `POST /api/upload-data`:
+  - Recibe `{ municipioSlug, tableType, headers, rows }` como JSON
+  - Mapea filas con las mismas funciones de conversión existentes
+  - Inserta por lotes de 1000 en tablas dinámicas
+- `backend/src/index.ts` — `express.json()` con `limit: "100mb"` para CSV grandes como JSON
+
+### Vaciar tabla (truncate) con confirmación
+- `backend/src/db/dynamic-tables.ts` — Nueva función `truncateTable(slug, tableType)` con `TRUNCATE TABLE ... RESTART IDENTITY`
+- `backend/src/routes/upload.ts` — Nuevo endpoint `DELETE /api/truncate/:slug/:tableType`
+- `frontend/src/components/TableStats.tsx` — Botón 🗑️ en cada celda de conteo (solo visible si count > 0), modal de confirmación con advertencia antes de vaciar
+
 ### Dependencias actualizadas
 - `drizzle-orm` actualizado de 0.34.1 → 0.45.1
 - `drizzle-kit` actualizado de 0.28.1 → 0.31.9 (compatibilidad)

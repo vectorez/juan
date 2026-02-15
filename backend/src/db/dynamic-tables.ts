@@ -114,4 +114,10 @@ export async function insertBatch(slug: string, tableType: "facturacion" | "reca
   );
 }
 
+export async function truncateTable(slug: string, tableType: "facturacion" | "recaudos") {
+  const s = sanitizeSlug(slug);
+  const tableName = `${s}_${tableType}`;
+  await client.unsafe(`TRUNCATE TABLE "${tableName}" RESTART IDENTITY`);
+}
+
 export { sanitizeSlug };
