@@ -68,6 +68,12 @@ cd backend && node_modules/.bin/drizzle-kit push
 3. **Visor de datos** — Tabla estilo spreadsheet con filtro por importación y eliminación selectiva
 4. **Constructor de pipelines** — Drag & drop visual con nodos: Source, Filter, Aggregate, Transform, Conditional, Output
 5. **Plantillas Excel** — Descarga de plantilla con encabezados correctos por municipio
+6. **Generador de reportes** — Reportes corporativos tipo Power BI vinculados a pipelines:
+   - 5 tipos de widgets: KPI Card, Gráfica de Barras, Gráfica de Líneas/Área, Torta/Donut, Tabla
+   - Constructor visual con grilla de 12 columnas y altura configurable
+   - Panel de configuración dinámico por tipo de widget
+   - Ejecuta el pipeline al abrir el reporte y muestra datos en tiempo real
+   - Guardado en base de datos (`reportes` table)
 
 ## Scripts disponibles
 

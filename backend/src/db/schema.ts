@@ -31,3 +31,13 @@ export const pipelines = pgTable("pipelines", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const reportes = pgTable("reportes", {
+  id: serial("id").primaryKey(),
+  nombre: varchar("nombre", { length: 200 }).notNull(),
+  descripcion: text("descripcion").default(""),
+  pipelineId: integer("pipeline_id").references(() => pipelines.id, { onDelete: "set null" }),
+  config: json("config").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
