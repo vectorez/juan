@@ -8,6 +8,7 @@ import uploadRouter from "./routes/upload.js";
 import municipiosRouter from "./routes/municipios.js";
 import pipelinesRouter from "./routes/pipelines.js";
 import reportesRouter from "./routes/reportes.js";
+import publicRouter from "./routes/public.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
@@ -27,6 +28,11 @@ app.use("/api", uploadRouter);
 app.use("/api", municipiosRouter);
 app.use("/api", pipelinesRouter);
 app.use("/api", reportesRouter);
+app.use("/api/public", publicRouter);
+
+app.get("/docs", (_req, res) => {
+  res.sendFile(path.join(__dirname, "docs.html"));
+});
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });

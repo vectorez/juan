@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Reference — Gestor CSV → PostgreSQL</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e2e8f0; line-height: 1.6; }
+    a { color: #818cf8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .layout { display: flex; min-height: 100vh; }
+
+    /* Sidebar */
+    .sidebar {
+      width: 260px; flex-shrink: 0; background: #1a1d2e; border-right: 1px solid #2d3148;
+      padding: 24px 0; position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    }
+    .sidebar-logo { padding: 0 20px 20px; border-bottom: 1px solid #2d3148; margin-bottom: 16px; }
+    .sidebar-logo h1 { font-size: 14px; font-weight: 700; color: #a5b4fc; }
+    .sidebar-logo p  { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .sidebar-section { padding: 8px 20px; margin-top: 8px; }
+    .sidebar-section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #475569; margin-bottom: 6px; }
+    .sidebar-link { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; font-size: 12px; color: #94a3b8; cursor: pointer; }
+    .sidebar-link:hover { background: #2d3148; color: #e2e8f0; }
+    .sidebar-link.active { background: #312e81; color: #a5b4fc; }
+    .method-badge { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 4px; flex-shrink: 0; }
+    .get  { background: #065f46; color: #6ee7b7; }
+    .post { background: #1e40af; color: #93c5fd; }
+
+    /* Main */
+    .main { flex: 1; max-width: calc(100% - 260px); }
+    .hero { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); padding: 48px 48px 40px; border-bottom: 1px solid #2d3148; }
+    .hero h2 { font-size: 28px; font-weight: 800; color: #fff; }
+    .hero p  { color: #a5b4fc; margin-top: 8px; font-size: 15px; }
+    .base-url { margin-top: 20px; display: inline-flex; align-items: center; gap: 10px; background: #0f1117; border: 1px solid #2d3148; padding: 10px 16px; border-radius: 8px; }
+    .base-url span:first-child { font-size: 11px; color: #64748b; }
+    .base-url code { font-size: 13px; color: #6ee7b7; font-family: 'Cascadia Code', 'JetBrains Mono', monospace; }
+
+    .content { padding: 0 48px 80px; }
+
+    /* Section headers */
+    .section { margin-top: 48px; }
+    .section-title { font-size: 20px; font-weight: 700; color: #e2e8f0; padding-bottom: 12px; border-bottom: 1px solid #2d3148; margin-bottom: 24px; }
+
+    /* Endpoint card */
+    .endpoint { border: 1px solid #2d3148; border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
+    .endpoint-header { display: flex; align-items: center; gap: 12px; padding: 14px 20px; background: #1a1d2e; cursor: pointer; user-select: none; }
+    .endpoint-header:hover { background: #1e2240; }
+    .method { font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 5px; font-family: monospace; }
+    .endpoint-path { font-size: 14px; font-family: 'Cascadia Code', 'JetBrains Mono', monospace; color: #e2e8f0; }
+    .endpoint-desc { margin-left: auto; font-size: 12px; color: #64748b; }
+    .endpoint-body { padding: 20px; border-top: 1px solid #2d3148; display: none; }
+    .endpoint-body.open { display: block; }
+
+    /* Params table */
+    .params-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #64748b; margin-bottom: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px; }
+    th { text-align: left; padding: 8px 12px; background: #0f1117; color: #64748b; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+    td { padding: 8px 12px; border-top: 1px solid #2d3148; color: #cbd5e1; vertical-align: top; }
+    td code { background: #1a1d2e; padding: 1px 5px; border-radius: 4px; font-size: 12px; color: #a5b4fc; }
+    .required { color: #f87171; font-size: 10px; font-weight: 700; }
+    .optional { color: #64748b; font-size: 10px; }
+
+    /* Code blocks */
+    .code-block { background: #0a0c14; border: 1px solid #2d3148; border-radius: 8px; overflow: hidden; margin-bottom: 16px; }
+    .code-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; background: #1a1d2e; border-bottom: 1px solid #2d3148; }
+    .code-lang { font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+    .copy-btn { font-size: 11px; color: #818cf8; background: none; border: none; cursor: pointer; padding: 2px 8px; border-radius: 4px; }
+    .copy-btn:hover { background: #2d3148; }
+    pre { padding: 16px; overflow-x: auto; font-size: 12px; line-height: 1.7; font-family: 'Cascadia Code', 'JetBrains Mono', monospace; color: #e2e8f0; }
+    .kw  { color: #c084fc; }
+    .str { color: #86efac; }
+    .num { color: #f9a8d4; }
+    .key { color: #93c5fd; }
+    .cmt { color: #475569; font-style: italic; }
+
+    /* Response example */
+    .response-label { font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .status-200 { background: #065f46; color: #6ee7b7; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+    .status-404 { background: #7f1d1d; color: #fca5a5; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+    .tab { font-size: 11px; padding: 5px 12px; border-radius: 5px; cursor: pointer; border: 1px solid #2d3148; color: #64748b; background: none; }
+    .tab.active { background: #312e81; color: #a5b4fc; border-color: #312e81; }
+
+    /* Try it section */
+    .try-section { background: #0a0c14; border: 1px solid #2d3148; border-radius: 8px; padding: 16px; margin-top: 16px; }
+    .try-title { font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 12px; }
+    .try-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+    .try-label { font-size: 11px; color: #94a3b8; width: 80px; flex-shrink: 0; }
+    .try-input { flex: 1; background: #1a1d2e; border: 1px solid #2d3148; border-radius: 5px; padding: 5px 10px; font-size: 12px; color: #e2e8f0; outline: none; font-family: monospace; }
+    .try-input:focus { border-color: #4f46e5; }
+    .try-btn { background: #4f46e5; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .try-btn:hover { background: #4338ca; }
+    .try-result { margin-top: 10px; background: #1a1d2e; border-radius: 6px; padding: 12px; font-size: 11px; font-family: monospace; color: #6ee7b7; max-height: 200px; overflow: auto; white-space: pre; }
+
+    /* Info boxes */
+    .info-box { background: #1e3a5f; border: 1px solid #1d4ed8; border-radius: 8px; padding: 14px 16px; margin-bottom: 16px; font-size: 13px; color: #93c5fd; }
+    .info-box strong { color: #bfdbfe; }
+    .warn-box { background: #422006; border: 1px solid #92400e; border-radius: 8px; padding: 14px 16px; margin-bottom: 16px; font-size: 13px; color: #fed7aa; }
+
+    /* Badge */
+    .badge { display: inline-block; background: #312e81; color: #a5b4fc; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 8px; }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main { max-width: 100%; }
+      .content { padding: 0 16px 48px; }
+      .hero { padding: 24px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <h1>📊 Gestor CSV API</h1>
+      <p>REST API Reference</p>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Introducción</div>
+      <a class="sidebar-link" href="#intro">Primeros pasos</a>
+      <a class="sidebar-link" href="#formats">Formato de respuesta</a>
+      <a class="sidebar-link" href="#errors">Manejo de errores</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Municipios</div>
+      <a class="sidebar-link" href="#get-municipios">
+        <span class="method-badge get">GET</span> /municipios
+      </a>
+      <a class="sidebar-link" href="#get-municipio">
+        <span class="method-badge get">GET</span> /municipios/:slug
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Datos</div>
+      <a class="sidebar-link" href="#get-facturacion">
+        <span class="method-badge get">GET</span> /:slug/facturacion
+      </a>
+      <a class="sidebar-link" href="#get-recaudos">
+        <span class="method-badge get">GET</span> /:slug/recaudos
+      </a>
+      <a class="sidebar-link" href="#get-importaciones">
+        <span class="method-badge get">GET</span> /:slug/importaciones
+      </a>
+      <a class="sidebar-link" href="#get-stats">
+        <span class="method-badge get">GET</span> /:slug/stats
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Ejemplos</div>
+      <a class="sidebar-link" href="#examples-js">JavaScript / Fetch</a>
+      <a class="sidebar-link" href="#examples-python">Python</a>
+      <a class="sidebar-link" href="#examples-curl">cURL</a>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main class="main">
+    <div class="hero">
+      <h2>API Reference</h2>
+      <p>API REST pública para consultar datos de facturación y recaudos municipales.</p>
+      <div class="base-url">
+        <span>BASE URL</span>
+        <code id="baseUrl">https://tu-dominio.replit.app/api/public</code>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- Intro -->
+      <div class="section" id="intro">
+        <div class="section-title">Primeros pasos</div>
+        <div class="info-box">
+          <strong>Sin autenticación requerida.</strong> Todos los endpoints son públicos y de solo lectura.
+          La API devuelve JSON en todas las respuestas.
+        </div>
+        <p style="color:#94a3b8;font-size:14px;margin-bottom:16px;">
+          La API permite consultar los datos de municipios almacenados en el sistema,
+          incluyendo datos de facturación y recaudos, importaciones y estadísticas agregadas.
+        </p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">Ejemplo rápido — cURL</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><span class="cmt"># Listar municipios disponibles</span>
+curl <span class="str">"https://tu-dominio.replit.app/api/public/municipios"</span></pre>
+        </div>
+      </div>
+
+      <!-- Format -->
+      <div class="section" id="formats">
+        <div class="section-title">Formato de respuesta</div>
+        <p style="color:#94a3b8;font-size:14px;margin-bottom:16px;">Todas las respuestas siguen el mismo esquema base:</p>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">JSON</span></div>
+          <pre>{
+  <span class="key">"success"</span>: <span class="kw">true</span>,          <span class="cmt">// boolean — éxito o error</span>
+  <span class="key">"total"</span>: <span class="num">42</span>,              <span class="cmt">// integer — total de registros (cuando aplica)</span>
+  <span class="key">"pagination"</span>: {          <span class="cmt">// objeto de paginación (cuando aplica)</span>
+    <span class="key">"page"</span>: <span class="num">1</span>,
+    <span class="key">"limit"</span>: <span class="num">100</span>,
+    <span class="key">"pages"</span>: <span class="num">5</span>,
+    <span class="key">"has_next"</span>: <span class="kw">true</span>,
+    <span class="key">"has_prev"</span>: <span class="kw">false</span>
+  },
+  <span class="key">"data"</span>: [...]            <span class="cmt">// array o objeto con los datos</span>
+}</pre>
+        </div>
+      </div>
+
+      <!-- Errors -->
+      <div class="section" id="errors">
+        <div class="section-title">Manejo de errores</div>
+        <table>
+          <thead><tr><th>Código</th><th>Significado</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td><code>200</code></td><td>OK</td><td>Respuesta exitosa</td></tr>
+            <tr><td><code>404</code></td><td>Not Found</td><td>Municipio o recurso no existe</td></tr>
+            <tr><td><code>500</code></td><td>Server Error</td><td>Error interno del servidor</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- GET /municipios -->
+      <div class="section" id="get-municipios">
+        <div class="section-title">Listar municipios</div>
+        <div class="endpoint">
+          <div class="endpoint-header" onclick="toggleEndpoint(this)">
+            <span class="method get">GET</span>
+            <span class="endpoint-path">/api/public/municipios</span>
+            <span class="endpoint-desc">Lista todos los municipios registrados</span>
+          </div>
+          <div class="endpoint-body open">
+            <p class="params-title">Parámetros de consulta</p>
+            <table>
+              <thead><tr><th>Parámetro</th><th>Tipo</th><th>Descripción</th></tr></thead>
+              <tbody>
+                <tr><td><code>departamento</code><br><span class="optional">opcional</span></td><td>string</td><td>Filtra por nombre de departamento (búsqueda parcial)</td></tr>
+                <tr><td><code>activo</code><br><span class="optional">opcional</span></td><td>boolean</td><td>Filtra por estado activo: <code>true</code> o <code>false</code></td></tr>
+              </tbody>
+            </table>
+
+            <div class="response-label"><span class="status-200">200</span> Respuesta</div>
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">JSON</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div>
+              <pre>{
+  <span class="key">"success"</span>: <span class="kw">true</span>,
+  <span class="key">"total"</span>: <span class="num">2</span>,
+  <span class="key">"data"</span>: [
+    {
+      <span class="key">"id"</span>: <span class="num">1</span>,
+      <span class="key">"cod_departamento"</span>: <span class="num">5</span>,
+      <span class="key">"nombre_departamento"</span>: <span class="str">"Antioquia"</span>,
+      <span class="key">"cod_municipio"</span>: <span class="num">3</span>,
+      <span class="key">"nombre_municipio"</span>: <span class="str">"Apartadó"</span>,
+      <span class="key">"slug"</span>: <span class="str">"apartado"</span>,
+      <span class="key">"activo"</span>: <span class="kw">true</span>,
+      <span class="key">"encabezados_facturacion"</span>: [<span class="str">"ciclo"</span>, <span class="str">"servicio"</span>, <span class="str">"valor_factura"</span>],
+      <span class="key">"encabezados_recaudos"</span>: [<span class="str">"fecha"</span>, <span class="str">"valor_recaudado"</span>],
+      <span class="key">"columnas_facturacion"</span>: <span class="num">25</span>,
+      <span class="key">"columnas_recaudos"</span>: <span class="num">23</span>
+    }
+  ]
+}</pre>
+            </div>
+
+            <div class="try-section">
+              <div class="try-title">🔬 Probar</div>
+              <div class="try-row">
+                <span class="try-label">departamento</span>
+                <input class="try-input" id="try-dept" placeholder="ej: Antioquia" />
+              </div>
+              <button class="try-btn" onclick="tryMunicipios()">Ejecutar</button>
+              <div class="try-result" id="try-municipios-result" style="display:none"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GET /municipios/:slug -->
+      <div class="section" id="get-municipio">
+        <div class="section-title">Detalle de municipio</div>
+        <div class="endpoint">
+          <div class="endpoint-header" onclick="toggleEndpoint(this)">
+            <span class="method get">GET</span>
+            <span class="endpoint-path">/api/public/municipios/<span style="color:#f9a8d4">:slug</span></span>
+            <span class="endpoint-desc">Información completa + estadísticas</span>
+          </div>
+          <div class="endpoint-body open">
+            <p class="params-title">Parámetros de ruta</p>
+            <table>
+              <thead><tr><th>Parámetro</th><th>Tipo</th><th>Descripción</th></tr></thead>
+              <tbody>
+                <tr><td><code>slug</code><br><span class="required">requerido</span></td><td>string</td><td>Identificador único del municipio (ej: <code>apartado</code>, <code>medellin</code>)</td></tr>
+              </tbody>
+            </table>
+
+            <div class="response-label"><span class="status-200">200</span> Respuesta</div>
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">JSON</span></div>
+              <pre>{
+  <span class="key">"success"</span>: <span class="kw">true</span>,
+  <span class="key">"data"</span>: {
+    <span class="key">"id"</span>: <span class="num">1</span>,
+    <span class="key">"nombre_municipio"</span>: <span class="str">"Apartadó"</span>,
+    <span class="key">"slug"</span>: <span class="str">"apartado"</span>,
+    <span class="key">"encabezados_facturacion"</span>: [<span class="str">"ciclo"</span>, <span class="str">"valor_factura"</span>],
+    <span class="key">"encabezados_recaudos"</span>: [<span class="str">"fecha"</span>, <span class="str">"valor"</span>],
+    <span class="key">"stats"</span>: {
+      <span class="key">"total_registros_facturacion"</span>: <span class="num">124530</span>,
+      <span class="key">"total_registros_recaudos"</span>: <span class="num">98200</span>
+    }
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GET /:slug/facturacion -->
+      <div class="section" id="get-facturacion">
+        <div class="section-title">Datos de facturación</div>
+        <div class="endpoint">
+          <div class="endpoint-header" onclick="toggleEndpoint(this)">
+            <span class="method get">GET</span>
+            <span class="endpoint-path">/api/public/municipios/<span style="color:#f9a8d4">:slug</span>/facturacion</span>
+            <span class="endpoint-desc">Registros de facturación paginados</span>
+          </div>
+          <div class="endpoint-body open">
+            <p class="params-title">Parámetros de consulta</p>
+            <table>
+              <thead><tr><th>Parámetro</th><th>Tipo</th><th>Descripción</th></tr></thead>
+              <tbody>
+                <tr><td><code>page</code><br><span class="optional">opcional, default: 1</span></td><td>integer</td><td>Número de página</td></tr>
+                <tr><td><code>limit</code><br><span class="optional">opcional, default: 100, max: 1000</span></td><td>integer</td><td>Registros por página</td></tr>
+                <tr><td><code>fecha</code><br><span class="optional">opcional</span></td><td>date (YYYY-MM-DD)</td><td>Filtra por fecha de importación</td></tr>
+                <tr><td><code>columna</code><br><span class="optional">opcional</span></td><td>string</td><td>Nombre de columna para búsqueda (usar junto con <code>q</code>)</td></tr>
+                <tr><td><code>q</code><br><span class="optional">opcional</span></td><td>string</td><td>Valor a buscar en la columna especificada</td></tr>
+                <tr><td><code>orderby</code><br><span class="optional">opcional</span></td><td>string</td><td>Columna para ordenar resultados</td></tr>
+                <tr><td><code>dir</code><br><span class="optional">opcional, default: ASC</span></td><td>string</td><td>Dirección del orden: <code>ASC</code> o <code>DESC</code></td></tr>
+              </tbody>
+            </table>
+
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">Ejemplo de URL</span></div>
+              <pre>/api/public/municipios/apartado/facturacion?page=1&limit=50&fecha=2026-01-15
+/api/public/municipios/apartado/facturacion?columna=ciclo&q=01&orderby=valor_factura&dir=DESC</pre>
+            </div>
+
+            <div class="response-label"><span class="status-200">200</span> Respuesta</div>
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">JSON</span></div>
+              <pre>{
+  <span class="key">"success"</span>: <span class="kw">true</span>,
+  <span class="key">"municipio"</span>: <span class="str">"Apartadó"</span>,
+  <span class="key">"tabla"</span>: <span class="str">"facturacion"</span>,
+  <span class="key">"encabezados"</span>: [<span class="str">"ciclo"</span>, <span class="str">"servicio"</span>, <span class="str">"valor_factura"</span>],
+  <span class="key">"pagination"</span>: {
+    <span class="key">"total"</span>: <span class="num">124530</span>,
+    <span class="key">"page"</span>: <span class="num">1</span>,
+    <span class="key">"limit"</span>: <span class="num">100</span>,
+    <span class="key">"pages"</span>: <span class="num">1246</span>,
+    <span class="key">"has_next"</span>: <span class="kw">true</span>,
+    <span class="key">"has_prev"</span>: <span class="kw">false</span>
+  },
+  <span class="key">"data"</span>: [
+    { <span class="key">"id"</span>: <span class="num">1</span>, <span class="key">"ciclo"</span>: <span class="str">"01"</span>, <span class="key">"servicio"</span>: <span class="str">"ACUEDUCTO"</span>, <span class="key">"valor_factura"</span>: <span class="str">"85000"</span> },
+    <span class="cmt">// ...</span>
+  ]
+}</pre>
+            </div>
+
+            <div class="try-section">
+              <div class="try-title">🔬 Probar</div>
+              <div class="try-row">
+                <span class="try-label">slug</span>
+                <input class="try-input" id="try-slug-fact" placeholder="ej: apartado" />
+              </div>
+              <div class="try-row">
+                <span class="try-label">page</span>
+                <input class="try-input" id="try-page-fact" placeholder="1" style="max-width:80px" />
+                <span class="try-label" style="width:auto;margin-left:8px">limit</span>
+                <input class="try-input" id="try-limit-fact" placeholder="10" style="max-width:80px" />
+              </div>
+              <button class="try-btn" onclick="tryFacturacion()">Ejecutar</button>
+              <div class="try-result" id="try-fact-result" style="display:none"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GET /:slug/recaudos — compact -->
+      <div class="section" id="get-recaudos">
+        <div class="section-title">Datos de recaudos</div>
+        <div class="endpoint">
+          <div class="endpoint-header" onclick="toggleEndpoint(this)">
+            <span class="method get">GET</span>
+            <span class="endpoint-path">/api/public/municipios/<span style="color:#f9a8d4">:slug</span>/recaudos</span>
+            <span class="endpoint-desc">Registros de recaudos paginados — mismos parámetros que facturación</span>
+          </div>
+          <div class="endpoint-body">
+            <div class="info-box">Acepta exactamente los mismos parámetros que el endpoint de facturación (<code>page</code>, <code>limit</code>, <code>fecha</code>, <code>columna</code>, <code>q</code>, <code>orderby</code>, <code>dir</code>).</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GET /:slug/importaciones -->
+      <div class="section" id="get-importaciones">
+        <div class="section-title">Importaciones disponibles</div>
+        <div class="endpoint">
+          <div class="endpoint-header" onclick="toggleEndpoint(this)">
+            <span class="method get">GET</span>
+            <span class="endpoint-path">/api/public/municipios/<span style="color:#f9a8d4">:slug</span>/importaciones</span>
+            <span class="endpoint-desc">Lista las fechas de importación y conteo de registros</span>
+          </div>
+          <div class="endpoint-body open">
+            <p class="params-title">Parámetros de consulta</p>
+            <table>
+              <thead><tr><th>Parámetro</th><th>Tipo</th><th>Descripción</th></tr></thead>
+              <tbody>
+                <tr><td><code>tipo</code><br><span class="optional">opcional, default: facturacion</span></td><td>string</td><td><code>facturacion</code> o <code>recaudos</code></td></tr>
+              </tbody>
+            </table>
+
+            <div class="response-label"><span class="status-200">200</span> Respuesta</div>
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">JSON</span></div>
+              <pre>{
+  <span class="key">"success"</span>: <span class="kw">true</span>,
+  <span class="key">"municipio_slug"</span>: <span class="str">"apartado"</span>,
+  <span class="key">"tabla"</span>: <span class="str">"facturacion"</span>,
+  <span class="key">"total_importaciones"</span>: <span class="num">3</span>,
+  <span class="key">"data"</span>: [
+    { <span class="key">"fecha"</span>: <span class="str">"2026-01-20"</span>, <span class="key">"registros"</span>: <span class="num">124530</span> },
+    { <span class="key">"fecha"</span>: <span class="str">"2025-12-15"</span>, <span class="key">"registros"</span>: <span class="num">118200</span> }
+  ]
+}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GET /:slug/stats -->
+      <div class="section" id="get-stats">
+        <div class="section-title">Estadísticas</div>
+        <div class="endpoint">
+          <div class="endpoint-header" onclick="toggleEndpoint(this)">
+            <span class="method get">GET</span>
+            <span class="endpoint-path">/api/public/municipios/<span style="color:#f9a8d4">:slug</span>/stats</span>
+            <span class="endpoint-desc">Totales, importaciones y análisis por columna</span>
+          </div>
+          <div class="endpoint-body open">
+            <p class="params-title">Parámetros de consulta</p>
+            <table>
+              <thead><tr><th>Parámetro</th><th>Tipo</th><th>Descripción</th></tr></thead>
+              <tbody>
+                <tr><td><code>tipo</code><br><span class="optional">opcional, default: facturacion</span></td><td>string</td><td><code>facturacion</code> o <code>recaudos</code></td></tr>
+                <tr><td><code>columna</code><br><span class="optional">opcional</span></td><td>string</td><td>Si se especifica, devuelve análisis detallado de esa columna (top 10 valores, nulos, únicos)</td></tr>
+              </tbody>
+            </table>
+
+            <div class="response-label"><span class="status-200">200</span> Respuesta</div>
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">JSON</span></div>
+              <pre>{
+  <span class="key">"success"</span>: <span class="kw">true</span>,
+  <span class="key">"stats"</span>: {
+    <span class="key">"total_registros"</span>: <span class="num">124530</span>,
+    <span class="key">"total_columnas"</span>: <span class="num">25</span>,
+    <span class="key">"encabezados"</span>: [<span class="str">"ciclo"</span>, <span class="str">"servicio"</span>],
+    <span class="key">"total_importaciones"</span>: <span class="num">3</span>,
+    <span class="key">"importaciones"</span>: [{ <span class="key">"fecha"</span>: <span class="str">"2026-01-20"</span>, <span class="key">"registros"</span>: <span class="num">124530</span> }],
+    <span class="key">"columna_stats"</span>: {
+      <span class="key">"columna"</span>: <span class="str">"ciclo"</span>,
+      <span class="key">"total"</span>: <span class="num">124530</span>,
+      <span class="key">"valores_unicos"</span>: <span class="num">6</span>,
+      <span class="key">"no_nulos"</span>: <span class="num">124530</span>,
+      <span class="key">"top_valores"</span>: [
+        { <span class="key">"valor"</span>: <span class="str">"01"</span>, <span class="key">"cantidad"</span>: <span class="num">32100</span> }
+      ]
+    }
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Examples -->
+      <div class="section" id="examples-js">
+        <div class="section-title">Ejemplos — JavaScript / Fetch</div>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">JavaScript</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div>
+          <pre><span class="kw">const</span> BASE = <span class="str">'https://tu-dominio.replit.app/api/public'</span>;
+
+<span class="cmt">// Listar municipios</span>
+<span class="kw">const</span> municipios = <span class="kw">await</span> fetch(<span class="str">`${BASE}/municipios`</span>)
+  .then(r => r.json());
+
+<span class="cmt">// Obtener facturación con paginación</span>
+<span class="kw">const</span> params = <span class="kw">new</span> URLSearchParams({ page: <span class="str">'1'</span>, limit: <span class="str">'50'</span> });
+<span class="kw">const</span> facturacion = <span class="kw">await</span> fetch(<span class="str">`${BASE}/municipios/apartado/facturacion?${params}`</span>)
+  .then(r => r.json());
+
+console.log(<span class="str">`Total registros: ${</span>facturacion.pagination.total<span class="str">}`</span>);
+facturacion.data.forEach(row => console.log(row));</pre>
+        </div>
+      </div>
+
+      <div class="section" id="examples-python">
+        <div class="section-title">Ejemplos — Python</div>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">Python</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div>
+          <pre><span class="kw">import</span> requests
+
+BASE = <span class="str">'https://tu-dominio.replit.app/api/public'</span>
+
+<span class="cmt"># Listar municipios</span>
+r = requests.get(f<span class="str">'{BASE}/municipios'</span>)
+municipios = r.json()[<span class="str">'data'</span>]
+
+<span class="cmt"># Obtener estadísticas</span>
+stats = requests.get(
+    f<span class="str">'{BASE}/municipios/apartado/stats'</span>,
+    params={<span class="str">'tipo'</span>: <span class="str">'facturacion'</span>, <span class="str">'columna'</span>: <span class="str">'ciclo'</span>}
+).json()
+
+<span class="cmt"># Paginar todos los registros</span>
+<span class="kw">def</span> get_all_pages(slug, tabla):
+    page, all_rows = <span class="num">1</span>, []
+    <span class="kw">while True</span>:
+        data = requests.get(
+            f<span class="str">'{BASE}/municipios/{slug}/{tabla}'</span>,
+            params={<span class="str">'page'</span>: page, <span class="str">'limit'</span>: <span class="num">1000</span>}
+        ).json()
+        all_rows.extend(data[<span class="str">'data'</span>])
+        <span class="kw">if not</span> data[<span class="str">'pagination'</span>][<span class="str">'has_next'</span>]:
+            <span class="kw">break</span>
+        page += <span class="num">1</span>
+    <span class="kw">return</span> all_rows</pre>
+        </div>
+      </div>
+
+      <div class="section" id="examples-curl">
+        <div class="section-title">Ejemplos — cURL</div>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">Shell</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div>
+          <pre><span class="cmt"># Listar todos los municipios</span>
+curl "https://tu-dominio.replit.app/api/public/municipios"
+
+<span class="cmt"># Filtrar por departamento</span>
+curl "https://tu-dominio.replit.app/api/public/municipios?departamento=Antioquia"
+
+<span class="cmt"># Obtener detalle de un municipio</span>
+curl "https://tu-dominio.replit.app/api/public/municipios/apartado"
+
+<span class="cmt"># Facturación página 2 con 50 registros</span>
+curl "https://tu-dominio.replit.app/api/public/municipios/apartado/facturacion?page=2&limit=50"
+
+<span class="cmt"># Buscar por columna específica</span>
+curl "https://tu-dominio.replit.app/api/public/municipios/apartado/facturacion?columna=ciclo&q=01"
+
+<span class="cmt"># Estadísticas con análisis de columna</span>
+curl "https://tu-dominio.replit.app/api/public/municipios/apartado/stats?tipo=facturacion&columna=ciclo"</pre>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  // Set base URL from current host
+  const proto = location.protocol;
+  const host  = location.hostname;
+  const port  = location.port && location.port !== '80' && location.port !== '443' ? '' : '';
+  document.getElementById('baseUrl').textContent = `${proto}//${host}${port}/api/public`;
+
+  function toggleEndpoint(header) {
+    const body = header.nextElementSibling;
+    body.classList.toggle('open');
+  }
+
+  function copyCode(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    navigator.clipboard.writeText(pre.innerText).then(() => {
+      btn.textContent = '✓ Copiado';
+      setTimeout(() => btn.textContent = 'Copiar', 2000);
+    });
+  }
+
+  async function tryMunicipios() {
+    const dept = document.getElementById('try-dept').value;
+    const url = `/api/public/municipios${dept ? '?departamento=' + encodeURIComponent(dept) : ''}`;
+    const el = document.getElementById('try-municipios-result');
+    el.style.display = 'block';
+    el.textContent = 'Cargando...';
+    try {
+      const r = await fetch(url);
+      const data = await r.json();
+      el.textContent = JSON.stringify(data, null, 2);
+    } catch(e) {
+      el.textContent = 'Error: ' + e.message;
+    }
+  }
+
+  async function tryFacturacion() {
+    const slug  = document.getElementById('try-slug-fact').value || 'apartado';
+    const page  = document.getElementById('try-page-fact').value  || '1';
+    const limit = document.getElementById('try-limit-fact').value || '10';
+    const url = `/api/public/municipios/${slug}/facturacion?page=${page}&limit=${limit}`;
+    const el = document.getElementById('try-fact-result');
+    el.style.display = 'block';
+    el.textContent = 'Cargando...';
+    try {
+      const r = await fetch(url);
+      const data = await r.json();
+      el.textContent = JSON.stringify(data, null, 2);
+    } catch(e) {
+      el.textContent = 'Error: ' + e.message;
+    }
+  }
+</script>
+</body>
+</html>

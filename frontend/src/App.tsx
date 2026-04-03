@@ -3,7 +3,7 @@ import { TableStats } from "./components/TableStats";
 import { MunicipiosManager } from "./components/MunicipiosManager";
 import { FlowBuilder } from "./components/FlowBuilder/FlowBuilder";
 import { ReportsPage } from "./components/Reports/ReportsPage";
-import { Database, MapPin, Workflow, FileBarChart2 } from "lucide-react";
+import { Database, MapPin, Workflow, FileBarChart2, BookOpen } from "lucide-react";
 
 type Tab = "municipios" | "pipeline" | "reportes";
 
@@ -27,7 +27,7 @@ function App() {
               <Database className="w-8 h-8 text-indigo-600" />
               <h1 className="text-2xl font-bold text-gray-900">Gestor CSV → PostgreSQL</h1>
             </div>
-            <nav className="flex gap-2">
+            <nav className="flex gap-2 items-center">
               {tabs.map(tab => (
                 <button
                   key={tab.key}
@@ -42,6 +42,15 @@ function App() {
                   {tab.label}
                 </button>
               ))}
+              <a
+                href="/docs"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium border border-indigo-200 text-indigo-700 hover:bg-indigo-50 transition-colors"
+              >
+                <BookOpen className="w-4 h-4" />
+                API Docs
+              </a>
             </nav>
           </div>
         </header>
@@ -54,7 +63,7 @@ function App() {
               <Database className="w-5 h-5 text-indigo-600" />
               <span className="font-semibold text-gray-800">Gestor CSV → PostgreSQL</span>
             </div>
-            <nav className="flex gap-1">
+            <nav className="flex gap-1 items-center">
               {tabs.map(tab => (
                 <button
                   key={tab.key}
@@ -69,6 +78,10 @@ function App() {
                   {tab.label}
                 </button>
               ))}
+              <a href="/docs" target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition-colors ml-2">
+                <BookOpen className="w-3.5 h-3.5" /> API Docs
+              </a>
             </nav>
           </div>
           <div className="flex-1 overflow-hidden">
@@ -84,7 +97,7 @@ function App() {
               <Database className="w-5 h-5 text-indigo-600" />
               <span className="font-semibold text-gray-800">Gestor CSV → PostgreSQL</span>
             </div>
-            <nav className="flex gap-1">
+            <nav className="flex gap-1 items-center">
               {tabs.map(tab => (
                 <button
                   key={tab.key}
@@ -99,6 +112,10 @@ function App() {
                   {tab.label}
                 </button>
               ))}
+              <a href="/docs" target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition-colors ml-2">
+                <BookOpen className="w-3.5 h-3.5" /> API Docs
+              </a>
             </nav>
           </div>
           <div className="flex-1 overflow-auto p-6">

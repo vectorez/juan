@@ -15,6 +15,7 @@ export default defineConfig({
     cors: true,
     proxy: {
       '/api': 'http://localhost:3001',
+      '/docs': 'http://localhost:3001',
       '/analyze': 'http://localhost:8000',
     },
   },
