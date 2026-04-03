@@ -62,7 +62,7 @@ export function ReportBuilder({ reportId, onBack, onViewReport }: Props) {
   const [savedId, setSavedId] = useState<number | undefined>(reportId);
 
   useEffect(() => {
-    axios.get<SavedPipeline[]>("/api/pipelines").then(r => setPipelines(Array.isArray(r.data) ? r.data : [])).catch(() => {});
+    axios.get<{ data: SavedPipeline[] }>("/api/pipelines").then(r => setPipelines(Array.isArray(r.data?.data) ? r.data.data : [])).catch(() => {});
     if (reportId) {
       axios.get<SavedReport>(`/api/reportes/${reportId}`).then(({ data }) => {
         setName(data.nombre);
@@ -76,7 +76,8 @@ export function ReportBuilder({ reportId, onBack, onViewReport }: Props) {
   const runPipeline = useCallback(async (pipelineId: number) => {
     setRunning(true);
     try {
-      const { data: pl } = await axios.get<SavedPipeline>(`/api/pipelines/${pipelineId}`);
+      const { data: plResp } = await axios.get<{ data: SavedPipeline }>(`/api/pipelines/${pipelineId}`);
+      const pl = plResp.data ?? plResp;
       const fd = pl.flowData as { nodes: PipelineNode[]; edges: PipelineEdge[] };
       const results = await executePipeline(fd.nodes, fd.edges);
       const mapped: NodeResults = {};

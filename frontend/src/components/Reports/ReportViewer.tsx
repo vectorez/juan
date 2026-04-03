@@ -44,7 +44,8 @@ export function ReportViewer({ reportId, onBack }: Props) {
     if (!r.pipelineId) { setResults({}); return; }
     setRunning(true);
     try {
-      const { data: pl } = await axios.get<SavedPipeline>(`/api/pipelines/${r.pipelineId}`);
+      const { data: plResp } = await axios.get<{ data: SavedPipeline }>(`/api/pipelines/${r.pipelineId}`);
+      const pl = plResp.data ?? plResp;
       const fd = pl.flowData as { nodes: PipelineNode[]; edges: PipelineEdge[] };
       const nodeResults = await executePipeline(fd.nodes, fd.edges);
       const mapped: NodeResults = {};
