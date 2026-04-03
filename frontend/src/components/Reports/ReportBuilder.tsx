@@ -62,7 +62,7 @@ export function ReportBuilder({ reportId, onBack, onViewReport }: Props) {
   const [savedId, setSavedId] = useState<number | undefined>(reportId);
 
   useEffect(() => {
-    axios.get<SavedPipeline[]>("/api/pipelines").then(r => setPipelines(r.data)).catch(() => {});
+    axios.get<SavedPipeline[]>("/api/pipelines").then(r => setPipelines(Array.isArray(r.data) ? r.data : [])).catch(() => {});
     if (reportId) {
       axios.get<SavedReport>(`/api/reportes/${reportId}`).then(({ data }) => {
         setName(data.nombre);

@@ -16,7 +16,7 @@ export function ReportsManager({ onEdit, onView }: Props) {
   const load = async () => {
     try {
       const { data } = await axios.get<SavedReport[]>("/api/reportes");
-      setReports(data);
+      setReports(Array.isArray(data) ? data : []);
     } catch { /* ignore */ }
     setLoading(false);
   };
