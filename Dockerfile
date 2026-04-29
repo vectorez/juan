@@ -34,7 +34,7 @@ ENV NODE_ENV=production \
 RUN apk add --no-cache tini
 
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --include=dev
 
 COPY backend/ ./backend/
 COPY --from=backend-deps /app/backend/node_modules ./backend/node_modules
