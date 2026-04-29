@@ -1,6 +1,5 @@
 import type { ReportWidget, KpiConfig, BarChartConfig, LineChartConfig, PieChartConfig, DataTableConfig } from "./types";
-import { KPI_COLOR_MAP, WIDGET_COLORS } from "./types";
-import type { DataRow } from "../FlowBuilder/types";
+import { KPI_COLOR_MAP } from "./types";
 import { X } from "lucide-react";
 
 interface Props {
