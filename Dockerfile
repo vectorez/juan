@@ -4,19 +4,23 @@
 FROM node:20-alpine AS frontend-build
 WORKDIR /app/frontend
 
-COPY frontend/package*.json ./
-RUN npm install
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+COPY frontend/package.json frontend/pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile || pnpm install
 
 COPY frontend/ ./
-RUN npm run build
+RUN pnpm run build
 
 
 # ---------- Stage 2: dependencias del backend ----------
 FROM node:20-alpine AS backend-deps
 WORKDIR /app/backend
 
-COPY backend/package*.json ./
-RUN npm install
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+COPY backend/package.json backend/pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile || pnpm install
 
 COPY backend/ ./
 
@@ -29,7 +33,8 @@ ENV NODE_ENV=production \
     PORT=3001 \
     FRONTEND_PORT=5000
 
-RUN npm install -g concurrently serve
+RUN corepack enable && corepack prepare pnpm@latest --activate \
+    && pnpm add -g concurrently serve
 
 COPY --from=backend-deps  /app/backend          ./backend
 COPY --from=frontend-build /app/frontend/dist   ./frontend/dist
