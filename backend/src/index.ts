@@ -9,6 +9,7 @@ import municipiosRouter from "./routes/municipios.js";
 import pipelinesRouter from "./routes/pipelines.js";
 import reportesRouter from "./routes/reportes.js";
 import publicRouter from "./routes/public.js";
+import authRouter from "./routes/auth.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
@@ -28,6 +29,7 @@ app.use("/api", uploadRouter);
 app.use("/api", municipiosRouter);
 app.use("/api", pipelinesRouter);
 app.use("/api", reportesRouter);
+app.use("/api", authRouter);
 app.use("/api/public", publicRouter);
 
 app.get("/docs", (_req, res) => {

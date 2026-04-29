@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently -n BACK,FRONT -c cyan,magenta \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "cd backend && node_modules/.bin/tsx watch src/index.ts",
-    "dev:frontend": "cd frontend && node_modules/.bin/vite",
-    "build": "cd frontend && npm run build",
-    "start": "npm run dev"
+    "dev": "concurrently -n BACK,FRONT -c cyan,magenta \"pnpm run dev:backend\" \"pnpm run dev:frontend\"",
+    "dev:backend": "pnpm --prefix backend dev",
+    "dev:frontend": "pnpm --prefix frontend dev",
+    "build": "pnpm --prefix frontend build",
+    "start": "pnpm run dev"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

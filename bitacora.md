@@ -1,5 +1,15 @@
 # Bitácora de Cambios - Gestor CSV → PostgreSQL
 
+## 2026-04-29 (Sistema de Seguridad)
+
+### Implementación de Sistema de Login
+- **Variables de Entorno**: Añadido `ADMIN_USER=admin` y `ADMIN_PASSWORD=12345` al archivo `.env`.
+- **Backend (Seguridad)**:
+  - `backend/src/routes/auth.ts` — Nueva ruta `/api/login` para validar credenciales fijas desde `.env`.
+- **Frontend (Interfaz)**:
+  - `frontend/src/components/Login.tsx` — Nuevo componente de login premium.
+  - `frontend/src/App.tsx` — Estado persistente y botones de Logout.
+
 ## 2026-02-15
 
 ### Estructura del proyecto creada
@@ -285,3 +295,11 @@
   - Nuevo endpoint `DELETE /api/delete-import/:slug/:tableType?fecha=TIMESTAMP`
   - Elimina todos los registros que tengan el mismo `fecha_importacion`
   - Permite eliminar importaciones completas de forma selectiva sin afectar otras del mismo día
+
+## 2026-04-28 (Actualización de Mantenimiento)
+
+### Corrección de scripts de inicio para Windows
+- El error `"node_modules" no se reconoce...` se identificó como un problema de incompatibilidad de rutas en Windows dentro de `package.json`.
+- `package.json` (raíz) — Refactorizado para usar `pnpm` con el flag `--prefix` en lugar de `cd` y rutas directas a `node_modules/.bin/`.
+- Comandos actualizados de `npm` a `pnpm` para mantener consistencia con el gestor de paquetes preferido.
+- Se instalaron las dependencias en los subdirectorios `backend/` y `frontend/` de forma independiente, ya que no se encuentran configurados como un workspace unificado.
