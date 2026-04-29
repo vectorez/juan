@@ -38,15 +38,6 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-const frontendDist = path.resolve(__dirname, "../../frontend/dist");
-if (fs.existsSync(frontendDist)) {
-  app.use(express.static(frontendDist));
-  app.get(/^(?!\/api|\/docs|\/health|\/analyze).*/, (_req, res) => {
-    res.sendFile(path.join(frontendDist, "index.html"));
-  });
-  console.log(`Sirviendo frontend desde ${frontendDist}`);
-}
-
-app.listen(Number(PORT), "0.0.0.0", () => {
+app.listen(PORT, () => {
   console.log(`Backend corriendo en http://localhost:${PORT}`);
 });
