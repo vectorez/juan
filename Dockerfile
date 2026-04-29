@@ -1,44 +1,45 @@
-# syntax=docker/dockerfile:1.6
+# syntax=docker/dockerfile:1.7
 
-# ---------- Stage 1: build del frontend ----------
+############################
+# Stage 1: build frontend
+############################
 FROM node:20-alpine AS frontend-build
 WORKDIR /app/frontend
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-COPY frontend/package.json frontend/pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile || pnpm install
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
 
 COPY frontend/ ./
-RUN pnpm run build
+RUN npm run build
 
-
-# ---------- Stage 2: dependencias del backend ----------
+############################
+# Stage 2: install backend deps
+############################
 FROM node:20-alpine AS backend-deps
 WORKDIR /app/backend
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+COPY backend/package.json backend/package-lock.json ./
+RUN npm ci
 
-COPY backend/package.json backend/pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile || pnpm install
-
-COPY backend/ ./
-
-
-# ---------- Stage 3: imagen final ----------
+############################
+# Stage 3: runtime image
+############################
 FROM node:20-alpine AS runtime
 WORKDIR /app
 
 ENV NODE_ENV=production \
-    PORT=3001 \
-    FRONTEND_PORT=5000
+    PORT=5000
 
-RUN corepack enable && corepack prepare pnpm@latest --activate \
-    && pnpm add -g concurrently serve
+RUN apk add --no-cache tini
 
-COPY --from=backend-deps  /app/backend          ./backend
-COPY --from=frontend-build /app/frontend/dist   ./frontend/dist
+COPY backend/ ./backend/
+COPY --from=backend-deps /app/backend/node_modules ./backend/node_modules
 
-EXPOSE 3001 5000
+COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
-CMD ["sh", "-c", "concurrently -n BACK,FRONT -c cyan,magenta \"cd backend && node_modules/.bin/tsx src/index.ts\" \"serve -s frontend/dist -l ${FRONTEND_PORT}\""]
+RUN mkdir -p /app/backend/uploads
+
+EXPOSE 5000
+
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["sh", "-c", "cd backend && node_modules/.bin/tsx src/index.ts"]
