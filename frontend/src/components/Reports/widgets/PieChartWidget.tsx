@@ -43,7 +43,7 @@ export function PieChartWidget({ config, data }: Props) {
           outerRadius="70%"
           paddingAngle={2}
           dataKey="value"
-          label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+          label={({ name, percent }) => `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`}
           labelLine={false}
         >
           {chartData.map((_, i) => (
@@ -52,7 +52,7 @@ export function PieChartWidget({ config, data }: Props) {
         </Pie>
         <Tooltip
           contentStyle={{ fontSize: 12 }}
-          formatter={(v: number) => v.toLocaleString("es-CO")}
+          formatter={(v) => Number(v ?? 0).toLocaleString("es-CO")}
         />
         <Legend wrapperStyle={{ fontSize: 11 }} />
       </PieChart>

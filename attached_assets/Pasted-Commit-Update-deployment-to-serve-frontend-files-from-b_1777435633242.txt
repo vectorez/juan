@@ -1,0 +1,94 @@
+Commit: Update deployment to serve frontend files from backend
+
+Restores Dockerfile and backend/src/index.ts to a previous commit, simplifying deployment by having the backend serve the frontend's static files and removing concurrent processes. Uses npm instead of pnpm.
+
+Replit-Commit-Author: Agent
+Replit-Commit-Session-Id: 86e57212-9243-41c3-92bf-dffe4f68cc1c
+Replit-Commit-Checkpoint-Type: full_checkpoint
+Replit-Commit-Event-Id: ddb71755-7984-4f50-9f31-e9c65b02e753
+Replit-Helium-Checkpoint-Created: true 
+##########################################
+### Download Github Archive Started...
+### Wed, 29 Apr 2026 04:06:37 GMT
+##########################################
+
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.05kB done
+#1 DONE 0.0s
+
+#2 [internal] load .dockerignore
+#2 transferring context: 205B done
+#2 DONE 0.0s
+
+#3 resolve image config for docker.io/docker/dockerfile:1.7
+#3 DONE 0.2s
+
+#4 docker-image://docker.io/docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
+#4 CACHED
+
+#5 [internal] load metadata for docker.io/library/node:20-alpine
+#5 DONE 0.1s
+
+#6 [backend-deps 1/4] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+#6 DONE 0.0s
+
+#7 [internal] load build context
+#7 transferring context: 685.98kB 0.0s done
+#7 DONE 0.0s
+
+#8 [frontend-build 2/6] WORKDIR /app/frontend
+#8 CACHED
+
+#9 [frontend-build 3/6] COPY frontend/package.json frontend/package-lock.json ./
+#9 CACHED
+
+#10 [frontend-build 4/6] RUN npm ci
+#10 CACHED
+
+#11 [frontend-build 5/6] COPY frontend/ ./
+#11 DONE 0.0s
+
+#12 [frontend-build 6/6] RUN npm run build
+#12 0.395 
+#12 0.395 > frontend@0.0.0 build
+#12 0.395 > tsc -b && vite build
+#12 0.395 
+#12 9.786 src/components/Reports/WidgetConfigPanel.tsx(2,25): error TS6133: 'WIDGET_COLORS' is declared but its value is never read.
+#12 9.786 src/components/Reports/WidgetConfigPanel.tsx(3,1): error TS6133: 'DataRow' is declared but its value is never read.
+#12 9.790 src/components/Reports/widgets/PieChartWidget.tsx(46,54): error TS18048: 'percent' is possibly 'undefined'.
+#12 9.790 src/components/Reports/widgets/PieChartWidget.tsx(55,11): error TS2322: Type '(v: number) => string' is not assignable to type 'Formatter<ValueType, NameType> & ((value: ValueType, name: NameType, item: TooltipPayloadEntry, index: number, payload: TooltipPayload) => ReactNode | [...])'.
+#12 9.790   Type '(v: number) => string' is not assignable to type 'Formatter<ValueType, NameType>'.
+#12 9.790     Types of parameters 'v' and 'value' are incompatible.
+#12 9.790       Type 'ValueType | undefined' is not assignable to type 'number'.
+#12 9.790         Type 'undefined' is not assignable to type 'number'.
+#12 ERROR: process "/bin/sh -c npm run build" did not complete successfully: exit code: 2
+------
+ > [frontend-build 6/6] RUN npm run build:
+0.395 > tsc -b && vite build
+0.395 
+9.786 src/components/Reports/WidgetConfigPanel.tsx(2,25): error TS6133: 'WIDGET_COLORS' is declared but its value is never read.
+9.786 src/components/Reports/WidgetConfigPanel.tsx(3,1): error TS6133: 'DataRow' is declared but its value is never read.
+9.790 src/components/Reports/widgets/PieChartWidget.tsx(46,54): error TS18048: 'percent' is possibly 'undefined'.
+9.790 src/components/Reports/widgets/PieChartWidget.tsx(55,11): error TS2322: Type '(v: number) => string' is not assignable to type 'Formatter<ValueType, NameType> & ((value: ValueType, name: NameType, item: TooltipPayloadEntry, index: number, payload: TooltipPayload) => ReactNode | [...])'.
+9.790   Type '(v: number) => string' is not assignable to type 'Formatter<ValueType, NameType>'.
+9.790     Types of parameters 'v' and 'value' are incompatible.
+9.790       Type 'ValueType | undefined' is not assignable to type 'number'.
+9.790         Type 'undefined' is not assignable to type 'number'.
+------
+Dockerfile:13
+--------------------
+  11 |     
+  12 |     COPY frontend/ ./
+  13 | >>> RUN npm run build
+  14 |     
+  15 |     ############################
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 2
+##########################################
+### Error
+### Wed, 29 Apr 2026 04:06:52 GMT
+##########################################
+
+Command failed with exit code 1: docker buildx build --network host -f /etc/easypanel/projects/melodario/juaaan/code/Dockerfile -t easypanel/melodario/juaaan --label 'keep=true' --build-arg 'GIT_SHA=f1fe18cf9f46dbbb8cf425d391ad2e7be5ab159a' /etc/easypanel/projects/melodario/juaaan/code/
